@@ -15,14 +15,14 @@ const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADA
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 global.timeCoinmanCollectorStarted = (new Date()).toISOString();
 
-const { setup: setupGracefulExit } = require('./utils/gracefulExit');
+const { setup: setupGracefulExit } = require('./tools/gracefulExit');
 
 const { symbols: processSymbols } = setupGracefulExit();
 
 const { sendMessage } = telegram.init();
 
 const dbManager = new DbManager({ pairs });
-const letterMan = new LetterMan({ pairs, dbManager, skipedSymbol: processSymbols.letterManSkiped });
+const letterMan = new LetterMan({ pairs, dbManager, sendMessage, skipedSymbol: processSymbols.letterManSkiped });
 const { binanceWS, binanceRest } = binanceApi({ beautify: false, sendMessage, pairs, letterMan });
 const bnbRest = binanceRest();
 
@@ -31,7 +31,10 @@ const init = fetcher({ binanceRest: bnbRest, pairs });
 let retries = 0;
 
 async function startCollecting() {
-  if (retries >= 3) return errorLog(`Exiting. Maximum retries reachead (${retries})`);
+  if (retries >= 3) {
+    errorLog(`Exiting. Maximum retries reachead (${retries})`);
+    return process.exit();
+  }
   let data;
 
   try {

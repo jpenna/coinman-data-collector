@@ -22,7 +22,7 @@ module.exports = ({ beautify = false, sendMessage, pairs, letterMan }) => ({
     const cancelBot = setTimeout(() => {
       const text = 'Timeout. All websockets did not connect on time (2 min)';
       bnbLog(text);
-      sendMessage(text);
+      sendMessage(`📝⚠️ ${text}`);
       process.emit('SIGINT');
     }, 120000);
 

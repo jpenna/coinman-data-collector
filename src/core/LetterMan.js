@@ -1,22 +1,27 @@
 const debugLog = require('debug')('collector:LetterMan');
 
 class LetterMan {
-  constructor({ pairs, dbManager, skipedSymbol }) {
+  constructor({ pairs, dbManager, sendMessage, skipedSymbol }) {
     this.pairs = pairs;
     this.dbManager = dbManager;
+    this.sendMessage = sendMessage;
     this.skipedSymbol = skipedSymbol;
     this.runningSet = new Set();
+    this.startTime = Date.now();
     process.on('cleanup', LetterMan.cleanupModule.bind(this));
 
     setTimeout(this.resetRunningSet.bind(this), 180000);
   }
 
   resetRunningSet() {
+    const runningFor = `Running nonstop for ${((Date.now() - this.startTime) / 60000).toFixed(0)} minutes`;
     if (this.runningSet.size !== this.pairs.length) {
       const missing = this.pairs.filter(k => !this.runningSet.has(k));
-      debugLog(`Not all assets are running ${missing}`);
+      const msg = `Not all assets are running (${missing.length}): ${missing}\n${runningFor}`;
+      debugLog(msg);
+      this.sendMessage(`📝 ${msg}`);
     } else {
-      debugLog('All assets are running. Next check in 3 minutes.');
+      debugLog(`All assets are running. ${runningFor}`);
     }
 
     this.runningSet.clear();

@@ -1,8 +1,8 @@
 const fs = require('fs');
-const dbDebug = require('debug')('coinman:persist');
+const dbDebug = require('debug')('collector:persist');
 const errorsLog = require('simple-node-logger').createSimpleLogger('logs/errors.log');
 
-const { gracefulExit } = require('../utils/gracefulExit');
+const { gracefulExit } = require('../tools/gracefulExit');
 
 class DbManager {
   constructor({ pairs }) {

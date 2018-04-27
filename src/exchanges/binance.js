@@ -28,10 +28,10 @@ module.exports = ({ beautify = false, sendMessage, pairs, letterMan }) => ({
 
     const startConn = Date.now();
 
+    // TODO 2 keep track of stream last activity, if needed dump and reconnect
     bnbWS.onCombinedStream(
       candleStreams,
       ({ data }) => {
-        // TODO use time to check if the candle is over in case of websocket failure
         const { k: { s: pair } } = data;
         if (!connectedPairs[pair]) {
           connectedCount++;

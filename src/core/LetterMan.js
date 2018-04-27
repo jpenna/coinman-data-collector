@@ -6,26 +6,24 @@ class LetterMan {
     this.dbManager = dbManager;
     this.sendMessage = sendMessage;
     this.skipedSymbol = skipedSymbol;
-    this.runningSet = new Set();
+    this.missingSet = new Set();
     this.startTime = Date.now();
     process.on('cleanup', LetterMan.cleanupModule.bind(this));
 
-    setTimeout(this.resetRunningSet.bind(this), 180000);
+    setTimeout(this.resetMissingSet.bind(this), 180000);
   }
 
-  resetRunningSet() {
+  resetMissingSet() {
     const runningFor = `Running nonstop for ${((Date.now() - this.startTime) / 60000).toFixed(0)} minutes`;
-    if (this.runningSet.size !== this.pairs.length) {
-      const missing = this.pairs.filter(k => !this.runningSet.has(k));
-      const msg = `Not all assets are running (${missing.length}): ${missing}\n${runningFor}`;
+    if (this.missingSet.size) {
+      const msg = `Not all assets are running (${this.missingSet.length}): ${this.missingSet}\n${runningFor}`;
       debugLog(msg);
-      this.sendMessage(`📝 ${msg}`);
     } else {
       debugLog(`All assets are running. ${runningFor}`);
     }
 
-    this.runningSet.clear();
-    setTimeout(this.resetRunningSet.bind(this), 180000);
+    this.missingSet = new Set(this.pairs);
+    setTimeout(this.resetMissingSet.bind(this), 180000);
   }
 
   static cleanupModule() {
@@ -41,7 +39,7 @@ class LetterMan {
   }
 
   receivedBinanceCandle(pair, data) {
-    if (!this.runningSet.has(pair)) this.runningSet.add(pair);
+    if (this.missingSet.has(pair)) this.missingSet.delete(pair);
     this.dbManager.addKline(pair, data);
   }
 }

@@ -14,18 +14,20 @@
   "author": "Juliano Penna <julianopenna@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "binance": "github:laurynas-karvelis/binance",
+    "binance": "../binance",
+    "chai": "^4.1.2",
     "debug": "^3.1.0",
     "dotenv": "^5.0.1",
+    "graceful-exit": "../../graceful-exit",
     "if-env": "^1.0.4",
     "node-json-db": "^0.7.5",
     "simple-node-logger": "^0.93.37",
-    "telegraf": "^3.20.0"
+    "telegraf": "^3.21.2"
   },
   "devDependencies": {
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-plugin-import": "^2.11.0",
-    "nodemon": "^1.17.3"
+    "eslint-plugin-import": "^2.13.0",
+    "nodemon": "^1.17.5"
   }
 }

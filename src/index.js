@@ -1,5 +1,11 @@
+const fs = require('fs');
 const errorLog = require('debug')('collector:core');
 const debugSystem = require('debug')('collector:system');
+const { extraInfoSymbol } = require('./tools/gracefulExit');
+
+try {
+  fs.mkdirSync('logs');
+} catch (e) { /* empty */ }
 
 const {
   telegram,
@@ -7,24 +13,24 @@ const {
   fetcher,
   LetterMan,
 } = require('./core');
-const binanceApi = require('./exchanges/binance');
 
-const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
-// const pairs = ['BNBBTC'];
+// const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
+const pairs = ['ETHBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 global.timeCoinmanCollectorStarted = (new Date()).toISOString();
 
-const { setup: setupGracefulExit } = require('./tools/gracefulExit');
-
-const { symbols: processSymbols } = setupGracefulExit();
-
 const { sendMessage } = telegram.init();
 
 const dbManager = new DbManager({ pairs });
-const letterMan = new LetterMan({ pairs, dbManager, sendMessage, skipedSymbol: processSymbols.letterManSkiped });
-const { binanceWS, binanceRest } = binanceApi({ beautify: false, sendMessage, pairs, letterMan });
-const bnbRest = binanceRest();
+const letterMan = new LetterMan({ dbManager, extraInfoSymbol });
+
+const binanceRest = require('./exchanges/binanceRest');
+const WsHandler = require('./exchanges/wsHandler');
+
+const wsHandler = new WsHandler({ beautify: false, sendMessage, pairs, letterMan });
+
+const bnbRest = binanceRest({ beautify: false });
 
 const init = fetcher({ binanceRest: bnbRest, pairs });
 
@@ -54,7 +60,7 @@ async function startCollecting() {
     });
   });
 
-  binanceWS();
+  wsHandler.start();
 }
 
 startCollecting();

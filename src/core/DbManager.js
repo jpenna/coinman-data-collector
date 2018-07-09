@@ -2,7 +2,7 @@ const fs = require('fs');
 const dbDebug = require('debug')('collector:persist');
 const errorsLog = require('simple-node-logger').createSimpleLogger('logs/errors.log');
 
-const { gracefulExit } = require('../tools/gracefulExit');
+const { gracefulExit } = require('graceful-exit');
 
 class DbManager {
   constructor({ pairs }) {
@@ -18,7 +18,7 @@ class DbManager {
     return new Promise((function rerun(resolve) {
       const { length: wait } = Array.from(this.writting.values()).filter(v => v);
       if (!wait) {
-        this.writeStreams.forEach(stream => stream.end(']'));
+        // this.writeStreams.forEach(stream => stream.end(']'));
         resolve();
       }
       dbDebug(`Waiting all writes to finish. Count: ${wait}`);
@@ -31,7 +31,6 @@ class DbManager {
     this.pairs.forEach((pair) => {
       const fd = fs.openSync(`logs/${global.timeCoinmanCollectorStarted}/${pair}_ws.json`, 'wx');
       const writeStream = fs.createWriteStream('', { fd });
-      writeStream.write('[');
 
       writeStream.on('error', (err) => { // eslint-disable-line
         dbDebug(`Error writting to Stream ${pair}`, err);
@@ -67,7 +66,7 @@ class DbManager {
   }
 
   addKline(pair, data) {
-    const ready = this.writeStreams.get(pair).write(`,${JSON.stringify(data)}`);
+    const ready = this.writeStreams.get(pair).write(`${JSON.stringify(data)}*`);
     if (!ready) this.writting.set(pair, true);
   }
 

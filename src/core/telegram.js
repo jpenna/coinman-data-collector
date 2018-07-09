@@ -10,7 +10,11 @@ function init() {
 
   return {
     bot,
-    sendMessage: msg => bot.telegram.sendMessage(whiteList[0], msg, { parse_mode: 'Markdown' }),
+    sendMessage: (msg) => {
+      bot.telegram
+        .sendMessage(whiteList[0], msg, { parse_mode: 'Markdown' })
+        .catch(e => debug('Telegram message error', e));
+    },
   };
 }
 

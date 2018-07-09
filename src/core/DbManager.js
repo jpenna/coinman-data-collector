@@ -6,7 +6,7 @@ const { gracefulExit } = require('graceful-exit');
 
 class DbManager {
   constructor({ pairs }) {
-    this.writting = new Map();
+    this.writing = new Map();
     this.pairs = pairs;
     this.writeStreams = new Map();
     this.notFirstWrite = new Set();
@@ -16,7 +16,7 @@ class DbManager {
 
   onExit() {
     return new Promise((function rerun(resolve) {
-      const { length: wait } = Array.from(this.writting.values()).filter(v => v);
+      const { length: wait } = Array.from(this.writing.values()).filter(v => v);
       if (!wait) {
         // this.writeStreams.forEach(stream => stream.end(']'));
         resolve();
@@ -29,15 +29,15 @@ class DbManager {
   setStreams() {
     fs.mkdirSync(`logs/${global.timeCoinmanCollectorStarted}`);
     this.pairs.forEach((pair) => {
-      const fd = fs.openSync(`logs/${global.timeCoinmanCollectorStarted}/${pair}_ws.json`, 'wx');
-      const writeStream = fs.createWriteStream('', { fd });
+      const fd = fs.openSync(`logs/${global.timeCoinmanCollectorStarted}/${pair}_ws.coinman`, 'wx');
+      const writeStream = fs.createWriteStream(null, { fd });
 
       writeStream.on('error', (err) => { // eslint-disable-line
-        dbDebug(`Error writting to Stream ${pair}`, err);
-        errorsLog.error(`Error writting to Stream ${pair}`, err);
+        dbDebug(`Error writing to Stream ${pair}`, err);
+        errorsLog.error(`Error writing to Stream ${pair}`, err);
       }); // eslint-disable-line
       writeStream.on('drain', function () { // eslint-disable-line
-        this.writting.set(pair, false);
+        this.writing.set(pair, false);
       });
 
       const originalWrite = Object.getPrototypeOf(writeStream).write;
@@ -66,8 +66,8 @@ class DbManager {
   }
 
   addKline(pair, data) {
-    const ready = this.writeStreams.get(pair).write(`${JSON.stringify(data)}*`);
-    if (!ready) this.writting.set(pair, true);
+    const ready = this.writeStreams.get(pair).write(`*${JSON.stringify(data)}`);
+    if (!ready) this.writing.set(pair, true);
   }
 
   writeREST({ pair, data }) { // eslint-disable-line

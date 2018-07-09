@@ -2,8 +2,6 @@ const logger = require('debug')('collector:wsHandler');
 
 const BinanceWS = require('./binanceWS');
 
-// TODO Instead of doing the replace logic inside binanceWS, use 2 instances and replace here
-
 class WsHandler {
   constructor({ beautify = false, sendMessage, pairs, letterMan }) {
     this.beautify = beautify;
@@ -18,12 +16,10 @@ class WsHandler {
     this.isReplacing = false;
   }
 
-  wsTimeout() {
+  pairsTimeout() {
     const text = 'Timeout. All websockets did not connect on time (2 min)';
     logger(text);
     this.sendMessage(`📝⚠️ ${text}`);
-
-    console.log('cancel bot. replace:', !!this.newBinanceWS, 'this.isReplacing:', this.isReplacing);
 
     if (!this.newBinanceWS) return process.emit('quit');
 
@@ -32,24 +28,18 @@ class WsHandler {
   }
 
   processReplace() {
-    console.log('process replace start');
-
     this.isReplacing = true;
     this.newBinanceWS = new BinanceWS({
       beautify: false,
       pairs: this.pairs,
       letterMan: this.letterMan,
-      wsTimeout: this.wsTimeout.bind(this),
+      pairsTimeout: this.pairsTimeout.bind(this),
       allConnected: this.allConnected.bind(this),
     });
   }
 
   replace() {
-    console.log('replace ws');
-
     if (this.newBinanceWS.isDropped) return;
-    console.log('is not dropped, so replace');
-
     this.binanceWS.drop();
     this.binanceWS = this.newBinanceWS;
     this.isReplacing = false;
@@ -62,7 +52,7 @@ class WsHandler {
       beautify: false,
       pairs: this.pairs,
       letterMan: this.letterMan,
-      wsTimeout: this.wsTimeout.bind(this),
+      pairsTimeout: this.pairsTimeout.bind(this),
       allConnected: this.allConnected.bind(this),
     });
   }
@@ -74,8 +64,6 @@ class WsHandler {
   }
 
   checkConnection() {
-    console.log('checking connection');
-
     const runningFor = `(${((Date.now() - this.startTime) / 60000).toFixed(0)} minutes)`;
 
     // Logs
@@ -86,9 +74,6 @@ class WsHandler {
       logger(`All assets are running ${runningFor}`);
     }
 
-    console.log(`has missing (${this.binanceWS.instance})`, this.binanceWS.missingPairs.hasMissing());
-    console.log('is replacing', this.isReplacing);
-
     const startReplace = this.binanceWS.missingPairs.hasMissing();
 
     if (startReplace && !this.isReplacing) this.processReplace();
@@ -97,9 +82,8 @@ class WsHandler {
       this.newBinanceWS.abort();
     }
 
-    // this.checkConnectionTimeout = setTimeout(this.checkConnection.bind(this), 180000); // 3 minutes
     clearTimeout(this.checkConnectionTimeout);
-    this.checkConnectionTimeout = setTimeout(this.checkConnection.bind(this), 10000); // 3 minutes
+    this.checkConnectionTimeout = setTimeout(this.checkConnection.bind(this), 120000); // 2 minutes
   }
 }
 

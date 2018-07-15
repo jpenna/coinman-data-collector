@@ -13,5 +13,6 @@ module.exports = {
       "ignoreTrailingComments": true,
     }],
     "no-plusplus": 0,
+    "no-underscore-dangle": ["allow"],
   }
 };

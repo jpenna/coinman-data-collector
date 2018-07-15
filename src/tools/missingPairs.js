@@ -3,13 +3,16 @@ const logger = require('debug')('collector:missingPairs');
 class MissingPairs {
   constructor({ pairs }) {
     this.missing = new Set(pairs);
-    // this.timeout = 180000; // 3 minutes
-    this.interval = 10000;
+    this.interval = 180000; // 3 minutes
     this.timeouts = new Map();
+    this.threshold = 3;
+  }
+
+  get size() {
+    return this.missing.size;
   }
 
   refresh(pair, ins) {
-    logger(`refresh pair (${ins})`, pair);
     this.missing.delete(pair);
     clearTimeout(this.timeouts.get(pair));
 
@@ -20,20 +23,28 @@ class MissingPairs {
     }, this.interval));
   }
 
+  clear() {
+    this.timeouts.forEach(t => clearTimeout(t));
+  }
+
   hasMissing() {
     return !!this.missing.size;
+  }
+
+  checkThreshold() {
+    return this.missing.size >= this.threshold;
   }
 
   has(pair) {
     return this.missing.has(pair);
   }
 
-  size() {
-    return this.missing.size;
-  }
-
   toString() {
     return Array.from(this.missing);
+  }
+
+  forEach(callback) {
+    this.missing.forEach(callback);
   }
 }
 

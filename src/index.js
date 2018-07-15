@@ -15,7 +15,7 @@ const {
 } = require('./core');
 
 // const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
-const pairs = ['ETHBTC'];
+const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 global.timeCoinmanCollectorStarted = (new Date()).toISOString();

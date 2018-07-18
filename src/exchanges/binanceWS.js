@@ -55,7 +55,7 @@ class BinanceWS {
     const singleWS = this.bnbWS.onKline(
       pair,
       this.klineInterval,
-      ((data) => {
+      (function (data) {
         bnbLog(`Single WS connected for ${pair} (${this.instance})`);
         const thisWS = this.connectingSingleWSMap.get(pair);
         // might have been dropped before
@@ -104,7 +104,7 @@ class BinanceWS {
     bnbLog(`Dropping single ${connecting ? 're' : ''}connection for ${pair} (${this.instance})`);
     cnx.then((socket) => {
       socket.disconnect();
-      socket.bnbEventHandler = (() => {
+      socket.bnbEventHandler = (function () {
         console.log(`handler of dropSingle ${pair} (${this.instance})`);
         cnx.then(socket => socket.disconnect && socket.disconnect());
       }).bind(this);
@@ -118,7 +118,7 @@ class BinanceWS {
 
   // Replace handler when all data is connected, so it won't check pair connection all the time
   getMessageHandler({ upgrade, single } = {}) {
-    const defaultHandler = (msg) => {
+    const defaultHandler = (function (msg) {
       const data = msg.data || msg;
       const { k: { s: pair } } = data;
       if (this.connectingSingleWSMap.has(pair)) {
@@ -131,16 +131,16 @@ class BinanceWS {
       }
       this.missingPairs.refresh(pair, this.instance);
       this.letterMan.receivedBinanceCandle(pair, data);
-    };
+    }).bind(this);
 
-    if (single || upgrade) return defaultHandler.bind(this);
+    if (single || upgrade) return defaultHandler;
 
     const startConn = Date.now();
     const pairsLength = this.pairs.length;
 
     this.wsTimeout = setTimeout(this.pairsTimeout, 150000); // 2:30 min
 
-    return (({ data }) => {
+    return (function ({ data }) {
       const { k: { s: pair } } = data;
       const firstConnection = this.missingPairs.has(pair);
       defaultHandler({ data });

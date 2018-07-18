@@ -10,11 +10,41 @@ class DbManager {
     this.sourceSet = sourceSet;
     this.writeStreams = new Map();
     this.notFirstWrite = new Set();
+    this.startTimeString = (new Date()).toISOString();
     gracefulExit(this._onExit.bind(this));
-    this._setStreams();
+    this.checkFileSizes(432000000); // 5 days
+  }
+
+  static getUid({ source, pair, interval }) {
+    return `${source}${pair}${interval}`;
+  }
+
+  checkSplit(stream) {
+    // 96076800 = 60*60*24*8 (8 days) * 139 (bytes/kline)
+    if (stream.bytesWritten < 96076800) return;
+
+    const [,, name] = stream.path.split('/');
+    const [source, pair, interval, part] = name.replace('.coinman', '').split('_');
+
+    debug(`Splitting file (${(stream.bytesWritten / 1000).toFixed(1)} kb): ${name}`);
+
+    const uid = DbManager.getUid({ source, pair, interval });
+
+    this.notFirstWrite.delete(uid);
+    this._createStream({ source, interval, pair, part: +part + 1 })
+      .then(() => stream.end());
+  }
+
+  checkFileSizes(timeout) {
+    clearTimeout(this.checkFileSizesTimeout);
+    this.checkFileSizesTimeout = setTimeout(() => {
+      this.writeStreams.forEach(stream => this.checkSplit(stream));
+      this.checkFileSizes(86400000); // 1 day
+    }, timeout);
   }
 
   _onExit() {
+    clearTimeout(this.checkFileSizesTimeout);
     return new Promise((function rerun(resolve) {
       const { length: wait } = Array.from(this.writing.values()).filter(v => v);
       if (!wait) {
@@ -34,7 +64,9 @@ class DbManager {
       const promise = new Promise((resolve) => {
         let done = 0; // Wait for both unlinks to finish
         const [prefix, folder, name] = stream.path.split('/');
-        const [source, pair, interval] = name.split('_');
+        const [source, pair, interval, p] = name.split('_');
+        const part = Number.parseInt(p.replace('.coinman', ''), 10);
+
         folderSet.add(`${prefix}/${folder}`);
 
         const callback = (skip, err) => {
@@ -53,6 +85,10 @@ class DbManager {
         if (stream.bytesWritten > 1501200) return resolve();
 
         fs.unlink(stream.path, callback);
+
+        // If it was split, don't remove the REST data
+        if (part > 0) return done++;
+
         const restPath = `${prefix}/${folder}/${source}_${pair}_${interval}_rest.json`;
         fs.unlink(restPath, callback.bind(this, true));
       });
@@ -88,61 +124,66 @@ class DbManager {
       });
   }
 
-  _setStreams() {
-    fs.mkdirSync(`logs/${global.timeCoinmanCollectorStarted}`);
-    this.sourceSet.forEach((info) => {
-      info.pairs.forEach((pair) => {
-        const name = `${info.source}_${pair}_${info.interval}_ws.coinman`;
-        const path = `logs/${global.timeCoinmanCollectorStarted}/${name}`;
-        const uid = `${info.source}${pair}${info.interval}`;
-        const fd = fs.openSync(path, 'wx');
-        // Set path for cleaning
-        const writeStream = fs.createWriteStream(path, { fd, encoding: 'ascii' });
+  _createStream({ source, interval, pair, part }) {
+    return new Promise((resolve) => {
+      const name = `${source}_${pair}_${interval}_${part}.coinman`;
+      const path = `logs/${this.startTimeString}/${name}`;
+      const uid = DbManager.getUid({ source, pair, interval });
 
-        writeStream.on('error', (err) => { // eslint-disable-line
-          debug(`Error writing to Stream ${pair}`, err);
-          fileLog.error(`Error writing to Stream ${pair}`, err);
-        }); // eslint-disable-line
-        writeStream.on('drain', function () { // eslint-disable-line
-          this.writing.set(uid, false);
-        });
+      const fd = fs.openSync(path, 'wx');
+      // Set path for cleaning
+      const writeStream = fs.createWriteStream(path, { fd, encoding: 'ascii' });
 
-        const originalWrite = Object.getPrototypeOf(writeStream).write;
-
-        writeStream.write = (function newWrite(_uid, notFirstWrite, string) {
-          if (notFirstWrite.has(_uid)) {
-            writeStream.write = originalWrite;
-            return writeStream.write(string);
-          }
-          const nlRemoved = string.substr(1);
-          notFirstWrite.add(_uid);
-          return originalWrite.call(writeStream, nlRemoved);
-        }).bind(writeStream, uid, this.notFirstWrite);
-
-        this.writeStreams.set(uid, writeStream);
+      writeStream.on('error', (err) => {
+        debug(`Error writing to Stream ${pair}`, err);
+        fileLog.error(`Error writing to Stream ${pair}`, err);
       });
+
+      writeStream.on('drain', function () {
+        this.writing.set(uid, false);
+      });
+
+      const originalWrite = Object.getPrototypeOf(writeStream).write;
+
+      writeStream.write = (function (_uid, notFirstWrite, string) {
+        if (notFirstWrite.has(_uid)) {
+          writeStream.write = originalWrite;
+          return writeStream.write(string);
+        }
+        const nlRemoved = string.substr(1);
+        notFirstWrite.add(_uid);
+        return originalWrite.call(writeStream, nlRemoved);
+      }).bind(writeStream, uid, this.notFirstWrite);
+
+      this.writeStreams.set(uid, writeStream);
+      resolve();
     });
   }
 
-  isReady() {
-    let numberOfFiles = 0;
-    this.sourceSet.forEach(i => numberOfFiles += i.pairs.length);
-    return new Promise((function rerun(res) {
-      setTimeout(() => {
-        if (this.writeStreams.size === numberOfFiles) return res();
-        rerun(res);
-      }, 100);
-    }).bind(this));
+  setStreams() {
+    fs.mkdirSync(`logs/${this.startTimeString}`);
+    const promises = [];
+    this.sourceSet.forEach((info) => {
+      info.pairs.forEach((pair) => {
+        promises.push(this._createStream({
+          pair,
+          source: info.source,
+          interval: info.interval,
+          part: 0,
+        }));
+      });
+    });
+    return Promise.all(promises);
   }
 
   addKline(pair, source, interval, data) {
-    const uid = `${source}${pair}${interval}`;
+    const uid = DbManager.getUid({ source, pair, interval });
     const ready = this.writeStreams.get(uid).write(`\n${data}`);
     if (!ready) this.writing.set(uid, true);
   }
 
   writeREST({ pair, source, interval, data }) { // eslint-disable-line
-    const path = `logs/${global.timeCoinmanCollectorStarted}/${source}_${pair}_${interval}_rest.json`;
+    const path = `logs/${this.startTimeString}/${source}_${pair}_${interval}_rest.json`;
     fs.writeFile(path, JSON.stringify(data), (err) => {
       if (err) debug(`Error writing to REST ${pair}`, err);
     });

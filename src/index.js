@@ -19,7 +19,6 @@ const {
 const pairs = ['ETHBTC', 'XRPBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
-global.timeCoinmanCollectorStarted = (new Date()).toISOString();
 
 const { sendMessage } = telegram.init();
 
@@ -41,6 +40,7 @@ let interval = 1000;
 
 async function startCollecting() {
   let data;
+  const dbManagerStarting = dbManager.setStreams();
 
   try {
     data = await init.fetchInitialData();
@@ -53,7 +53,7 @@ async function startCollecting() {
     return;
   }
 
-  await dbManager.isReady();
+  await dbManagerStarting;
 
   data.forEach((d, index) => {
     dbManager.writeREST({

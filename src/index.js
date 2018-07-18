@@ -15,7 +15,8 @@ const {
 } = require('./core');
 
 // const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
-const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
+// const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
+const pairs = ['ETHBTC', 'XRPBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 global.timeCoinmanCollectorStarted = (new Date()).toISOString();
@@ -34,21 +35,20 @@ const bnbRest = binanceRest({ beautify: false });
 
 const init = fetcher({ binanceRest: bnbRest, pairs });
 
-let retries = 0;
+let interval = 1000;
 
 async function startCollecting() {
-  if (retries >= 3) {
-    errorLog(`Exiting. Maximum retries reachead (${retries})`);
-    return process.exit();
-  }
   let data;
 
   try {
     data = await init.fetchInitialData();
   } catch (e) {
     errorLog('Error fetching initial data. Retrying.', e);
-    retries++;
-    return startCollecting();
+    setTimeout(() => {
+      if (interval < 10000) interval += 1000;
+      startCollecting();
+    }, interval);
+    return;
   }
 
   await dbManager.isReady();

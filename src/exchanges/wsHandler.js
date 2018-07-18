@@ -12,8 +12,6 @@ class WsHandler {
     this.missingSet = new Set();
     this.prevMissingSet = new Set();
     this.startTime = Date.now();
-
-    this.isReplacing = false;
   }
 
   pairsTimeout() {
@@ -24,12 +22,15 @@ class WsHandler {
     // If is first ws connection
     if (!this.newBinanceWS) return this.processReplace();
 
-    this.isReplacing = false;
+    this.dropNewBinanceWS();
+  }
+
+  dropNewBinanceWS() {
     this.newBinanceWS.drop();
+    this.newBinanceWS = null; // GC
   }
 
   processReplace() {
-    this.isReplacing = true;
     this.newBinanceWS = new BinanceWS({
       beautify: false,
       pairs: this.pairs,
@@ -41,16 +42,14 @@ class WsHandler {
 
   // TODO If 3 are missing in main, replace cnx. Else dont replace, just reconnect the missing one. Skip this coin from main. If received back from the main, replace usage and drop the single cnx.
   replace() {
-    if (this.newBinanceWS.isDropped) return;
+    if (!this.newBinanceWS) return;
     this.binanceWS.drop();
     this.binanceWS = this.newBinanceWS;
-    this.isReplacing = false;
     this.sendMessage(`🔗 New WS connected`);
   }
 
   start() {
     logger('Start WS Handler');
-
     this.binanceWS = new BinanceWS({
       beautify: false,
       pairs: this.pairs,
@@ -62,7 +61,7 @@ class WsHandler {
 
   allConnected(startConn) {
     logger(`All websockets connected (${startConn ? ((Date.now() - startConn) / 1000).toFixed(2) : '- '}sec)`);
-    if (this.isReplacing) this.replace();
+    if (this.newBinanceWS) this.replace();
     this.binanceWS.upgradeMessageHandler();
     this.checkConnection();
   }
@@ -72,7 +71,7 @@ class WsHandler {
 
     // Logs
     if (this.binanceWS.missingPairs.size) {
-      const msg = `(${this.binanceWS.instance}) Running for ${runningFor}. Not all assets are running (${this.binanceWS.missingPairs.size}): ${this.binanceWS.missingPairs.toString()}. Replacing: ${this.isReplacing}.`;
+      const msg = `(${this.binanceWS.instance}) Running for ${runningFor}. Not all assets are running (${this.binanceWS.missingPairs.size}): ${this.binanceWS.missingPairs.toString()}. Replacing: ${!!this.newBinanceWS}.`;
       logger(msg);
     } else {
       logger(`(${this.binanceWS.instance}) All assets are running ${runningFor}`);
@@ -80,15 +79,14 @@ class WsHandler {
 
     const startReplace = this.binanceWS.missingPairs.checkThreshold();
 
-    if (startReplace && !this.isReplacing) {
+    if (startReplace && !this.newBinanceWS) {
       this.processReplace();
-    } else if (this.isReplacing && !startReplace) {
-      this.isReplacing = false;
-      this.newBinanceWS.abort();
+    } else if (this.newBinanceWS && !startReplace) {
+      this.dropNewBinanceWS();
       this.sendMessage(`🔗 Reconnected with same WS`);
-    } else if (!this.isReplacing && this.binanceWS.missingPairs.size) {
+    } else if (!this.newBinanceWS && this.binanceWS.missingPairs.size) {
       console.log(`Start singles (${this.binanceWS.instance})`);
-      this.binanceWS.processSingleWS();
+      this.binanceWS.createSingleWS();
     }
 
     clearTimeout(this.checkConnectionTimeout);

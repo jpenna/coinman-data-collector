@@ -31,27 +31,27 @@
 
 ```json
 {
-  "e": "kline",     // Event type
-  "E": 123456789,   // Event time
-  "s": "BNBBTC",    // Symbol
+  "e": "kline",           // Event type
+  "E": 1530980888131,     // Event time
+  "s": "ETHBTC",          // Symbol
   "k": {
-    "t": 123400000, // Kline start time
-    "T": 123460000, // Kline close time
-    "s": "BNBBTC",  // Symbol
-    "i": "1m",      // Interval
-    "f": 100,       // First trade ID
-    "L": 200,       // Last trade ID
-    "o": "0.0010",  // Open price
-    "c": "0.0020",  // Close price
-    "h": "0.0025",  // High price
-    "l": "0.0015",  // Low price
-    "v": "1000",    // Base asset volume
-    "n": 100,       // Number of trades
-    "x": false,     // Is this kline closed?
-    "q": "1.0000",  // Quote asset volume
-    "V": "500",     // Taker buy base asset volume
-    "Q": "0.500",   // Taker buy quote asset volume
-    "B": "123456"   // Ignore
+    "t": 1530979200000,   // Kline start time
+    "T": 1530980999999,   // Kline close time
+    "s": "ETHBTC",        // Symbol
+    "i": "30m",           // Interval
+    "f": 72153943,        // First trade ID
+    "L": 72156485,        // Last trade ID
+    "o": "0.07121900",    // Open price
+    "c": "0.07109600",    // Close price
+    "h": "0.07146300",    // High price
+    "l": "0.07108000",    // Low price
+    "v": "2281.54400000", // Base asset volume
+    "n": 2543,            // Number of trades
+    "x": false,           // Is this kline the last?
+    "q": "162.63694544",  // Quote asset volume
+    "V": "995.92300000",  // Taker buy base asset volume
+    "Q": "71.03640917",   // Taker buy quote asset volume
+    "B": "0"              // Ignore
   }
 }
 ```

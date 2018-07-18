@@ -30,7 +30,7 @@ class DbManager {
     fs.mkdirSync(`logs/${global.timeCoinmanCollectorStarted}`);
     this.pairs.forEach((pair) => {
       const fd = fs.openSync(`logs/${global.timeCoinmanCollectorStarted}/${pair}_ws.coinman`, 'wx');
-      const writeStream = fs.createWriteStream(null, { fd });
+      const writeStream = fs.createWriteStream(null, { fd, encoding: 'ascii' });
 
       writeStream.on('error', (err) => { // eslint-disable-line
         dbDebug(`Error writing to Stream ${pair}`, err);
@@ -47,9 +47,9 @@ class DbManager {
           writeStream.write = originalWrite;
           return writeStream.write(string);
         }
-        const removeComma = string.substr(1);
+        const nlRemoved = string.substr(1);
         notFirstWrite.add(_pair);
-        return originalWrite.call(writeStream, removeComma);
+        return originalWrite.call(writeStream, nlRemoved);
       }).bind(writeStream, pair, this.notFirstWrite);
 
       this.writeStreams.set(pair, writeStream);
@@ -66,7 +66,7 @@ class DbManager {
   }
 
   addKline(pair, data) {
-    const ready = this.writeStreams.get(pair).write(`*${JSON.stringify(data)}`);
+    const ready = this.writeStreams.get(pair).write(`\n${data}`);
     if (!ready) this.writing.set(pair, true);
   }
 

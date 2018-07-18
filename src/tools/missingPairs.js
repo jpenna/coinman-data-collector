@@ -17,7 +17,7 @@ class MissingPairs {
     clearTimeout(this.timeouts.get(pair));
 
     this.timeouts.set(pair, setTimeout(() => {
-      logger(`adding back pair (${ins})`, pair);
+      logger(`Missing pair (${this.interval / 60000}min interval)(${ins}):`, pair);
 
       this.missing.add(pair);
     }, this.interval));

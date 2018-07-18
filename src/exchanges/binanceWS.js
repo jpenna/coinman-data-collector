@@ -18,6 +18,7 @@ class BinanceWS {
     this.missingPairs = new MissingPairs({ pairs });
     this.klineInterval = '30m';
     this.singleWSMap = new Map();
+    this.connectingSingleWSMap = new Map();
 
     this.reportAllConnected = allConnected;
 
@@ -28,48 +29,25 @@ class BinanceWS {
 
     this.bnbWS = new binanceApi.BinanceWS(this.beautify);
 
-    // this.connectCombined();
-    this.processSingleWS();
+    this.connectCombined();
   }
 
   connectCombined() {
     coreLog(`Initializing Binance WS (${this.instance})`);
     const { streams } = this.bnbWS;
 
-    this.messageHandler = this.getMessageHandler();
-
     const candleStreams = this.pairs.map(pair => streams.kline(pair, this.klineInterval));
 
     this._combinedWS = this.bnbWS.onCombinedStream(
       candleStreams,
-      this.combinedCallback.bind(this),
+      this.getMessageHandler(),
     );
   }
 
-  processSingleWS() {
+  createSingleWS() {
     this.missingPairs.forEach((pair) => {
-      if (this.singleWSMap.has(pair)) this.dropSingle(pair);
       this.connectSingle({ pair });
     });
-
-
-
-
-    const startConn = Date.now();
-    function verify() {
-      console.log('call verify');
-      setTimeout((() => {
-        console.log('check');
-        if (this.missingPairs.hasMissing()) return verify.call(this);
-        this.reportAllConnected(startConn);
-      }).bind(this), 3000);
-    }
-    verify.call(this);
-
-
-
-
-
   }
 
   connectSingle({ pair }) {
@@ -77,13 +55,29 @@ class BinanceWS {
     const singleWS = this.bnbWS.onKline(
       pair,
       this.klineInterval,
-      this.getMessageHandler({ single: true }).bind(this),
+      ((data) => {
+        bnbLog(`Single WS connected for ${pair} (${this.instance})`);
+        const thisWS = this.connectingSingleWSMap.get(pair);
+        // might have been dropped before
+        if (!thisWS)
+          return console.log(`THIS CALLBACK SHOULDN\'T HAPPEN ${pair} (${this.instance})`);
+        // Clear connecting
+        this.connectingSingleWSMap.delete(pair);
+        // If this is reconnection, drop the previous connection
+        if (this.singleWSMap.has(pair)) {
+          console.log(`Dropping previous single connection ${pair} (${this.instance})`);
+          this.dropSingle(pair);
+        }
+        // Replace this callback for default message handler
+        const callback = this.getMessageHandler({ single: true });
+        thisWS.then(socket => socket.bnbEventHandler = callback);
+        // Add ws to map
+        this.singleWSMap.set(pair, singleWS);
+        // Process received data
+        callback(data);
+      }).bind(this),
     );
-    this.singleWSMap.set(pair, singleWS);
-  }
-
-  combinedCallback(...args) {
-    this.messageHandler(...args);
+    this.connectingSingleWSMap.set(pair, singleWS);
   }
 
   drop() {
@@ -92,27 +86,34 @@ class BinanceWS {
     clearTimeout(this.wsTimeout);
     this.missingPairs.clear();
     // Disconnect socket
-    // this._combinedWS.then(socket => socket.disconnect());
+    const combinedWS = this._combinedWS;
+    combinedWS.then(socket => {
+      socket.disconnect()
+      // If no internet connection, disconnect on new message
+      socket.bnbEventHandler = () => {
+        combinedWS.then(socket => socket.disconnect && socket.disconnect());
+      };
+    });
     this.singleWSMap.forEach((v, k) => this.dropSingle(k));
-    // If no internet connection, disconnect on new message
-    this.messageHandler = () => {
-      this._combinedWS.then(socket => socket.disconnect && socket.disconnect());
-    };
   }
 
-  dropSingle(pair) {
-    bnbLog(`Dropping single connection for ${pair} (${this.instance})`);
-    const cnx = this.singleWSMap.get(pair);
-    if (!cnx) return console.log(`no connection single ${pair}`);
-    cnx.then(socket => socket.disconnect());
-    cnx.bnbEventHandler = () => {
-      cnx.then(socket => socket.disconnect && socket.disconnect());
-    };
-    this.singleWSMap.delete(pair);
+  dropSingle(pair, connecting) {
+    const map = connecting ? this.connectingSingleWSMap : this.singleWSMap;
+    const cnx = map.get(pair);
+    if (!cnx) return console.log(`no connection single ${pair} (${this.instance})`);
+    bnbLog(`Dropping single ${connecting ? 're' : ''}connection for ${pair} (${this.instance})`);
+    cnx.then((socket) => {
+      socket.disconnect();
+      socket.bnbEventHandler = (() => {
+        console.log(`handler of dropSingle ${pair} (${this.instance})`);
+        cnx.then(socket => socket.disconnect && socket.disconnect());
+      }).bind(this);
+    });
+    map.delete(pair);
   }
 
   upgradeMessageHandler() {
-    this.messageHandler = this.getMessageHandler({ upgrade: true });
+    this._combinedWS.then(socket => socket.bnbEventHandler = this.getMessageHandler({ upgrade: true }));
   }
 
   // Replace handler when all data is connected, so it won't check pair connection all the time
@@ -120,19 +121,26 @@ class BinanceWS {
     const defaultHandler = (msg) => {
       const data = msg.data || msg;
       const { k: { s: pair } } = data;
-      if (single && !this.singleWSMap.has(pair)) return this.dropSingle(pair);
+      if (this.connectingSingleWSMap.has(pair)) {
+        console.log('dropping single that is connecting pair');
+        this.dropSingle(pair, true);
+      }
+      if (!single && this.singleWSMap.has(pair)) {
+        console.log('this is not single, dropping single that is connected');
+        return this.dropSingle(pair);
+      }
       this.missingPairs.refresh(pair, this.instance);
       this.letterMan.receivedBinanceCandle(pair, data);
     };
 
-    if (single || upgrade) return defaultHandler;
+    if (single || upgrade) return defaultHandler.bind(this);
 
     const startConn = Date.now();
     const pairsLength = this.pairs.length;
 
     this.wsTimeout = setTimeout(this.pairsTimeout, 150000); // 2:30 min
 
-    return ({ data }) => {
+    return (({ data }) => {
       const { k: { s: pair } } = data;
       const firstConnection = this.missingPairs.has(pair);
       defaultHandler({ data });
@@ -145,7 +153,7 @@ class BinanceWS {
           this.reportAllConnected(startConn);
         }
       }
-    };
+    }).bind(this);
   }
 }
 

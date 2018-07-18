@@ -1,7 +1,8 @@
 const binanceApi = require('binance');
-const MissingPairs = require('../tools/missingPairs');
 const coreLog = require('debug')('collector:core');
 const bnbLog = require('debug')('collector:binance');
+
+const MissingPairs = require('../tools/missingPairs');
 
 bnbLog.log = console.error.bind(console); // eslint-disable-line no-console
 
@@ -55,12 +56,13 @@ class BinanceWS {
     const singleWS = this.bnbWS.onKline(
       pair,
       this.klineInterval,
-      (function (data) {
+      (function (data) { // eslint-disable-line prefer-arrow-callback
         bnbLog(`Single WS connected for ${pair} (${this.instance})`);
         const thisWS = this.connectingSingleWSMap.get(pair);
         // might have been dropped before
-        if (!thisWS)
-          return console.log(`THIS CALLBACK SHOULDN\'T HAPPEN ${pair} (${this.instance})`);
+        if (!thisWS) {
+          return console.log(`THIS CALLBACK SHOULDN'T HAPPEN ${pair} (${this.instance})`);
+        }
         // Clear connecting
         this.connectingSingleWSMap.delete(pair);
         // If this is reconnection, drop the previous connection
@@ -70,7 +72,7 @@ class BinanceWS {
         }
         // Replace this callback for default message handler
         const callback = this.getMessageHandler({ single: true });
-        thisWS.then(socket => socket.bnbEventHandler = callback);
+        thisWS.then(s => s.bnbEventHandler = callback);
         // Add ws to map
         this.singleWSMap.set(pair, singleWS);
         // Process received data
@@ -87,11 +89,11 @@ class BinanceWS {
     this.missingPairs.clear();
     // Disconnect socket
     const combinedWS = this._combinedWS;
-    combinedWS.then(socket => {
-      socket.disconnect()
+    combinedWS.then((socket) => {
+      socket.disconnect();
       // If no internet connection, disconnect on new message
       socket.bnbEventHandler = () => {
-        combinedWS.then(socket => socket.disconnect && socket.disconnect());
+        combinedWS.then(s => s.disconnect && s.disconnect());
       };
     });
     this.singleWSMap.forEach((v, k) => this.dropSingle(k));
@@ -106,7 +108,7 @@ class BinanceWS {
       socket.disconnect();
       socket.bnbEventHandler = (function () {
         console.log(`handler of dropSingle ${pair} (${this.instance})`);
-        cnx.then(socket => socket.disconnect && socket.disconnect());
+        cnx.then(s => s.disconnect && s.disconnect());
       }).bind(this);
     });
     map.delete(pair);

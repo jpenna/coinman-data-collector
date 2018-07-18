@@ -19,8 +19,8 @@ class LetterMan {
 
   receivedBinanceCandle(pair, data) {
     // eventTime startTime closeTime open close high low volumeQuote volumeBase takerBuyVolumeQuote takerBuyVolumeBase numberOfTrades lastKline
-    const kline = `${data.E} ${data.k.t} ${data.k.T} ${data.k.o} ${data.k.c} ${data.k.h} ${data.k.l} ${data.k.v} ${data.k.q} ${data.k.V} ${data.k.Q} ${data.k.n} ${data.k.x ? 1 : 0}`
-    this.dbManager.addKline(pair, kline);
+    const kline = `${data.E} ${data.k.t} ${data.k.T} ${data.k.o} ${data.k.c} ${data.k.h} ${data.k.l} ${data.k.v} ${data.k.q} ${data.k.V} ${data.k.Q} ${data.k.n} ${data.k.x ? 1 : 0}`;
+    this.dbManager.addKline(pair, 'BNB', '30m', kline);
   }
 }
 

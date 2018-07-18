@@ -23,7 +23,9 @@ global.timeCoinmanCollectorStarted = (new Date()).toISOString();
 
 const { sendMessage } = telegram.init();
 
-const dbManager = new DbManager({ pairs });
+const sourceSet = new Set([{ source: 'BNB', interval: '30m', pairs }]);
+
+const dbManager = new DbManager({ sourceSet });
 const letterMan = new LetterMan({ dbManager, extraInfoSymbol });
 
 const binanceRest = require('./exchanges/binanceRest');
@@ -56,6 +58,8 @@ async function startCollecting() {
   data.forEach((d, index) => {
     dbManager.writeREST({
       pair: pairs[index],
+      source: 'BNB',
+      interval: '30m',
       data: d,
     });
   });

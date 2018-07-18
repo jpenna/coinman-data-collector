@@ -7,4 +7,5 @@ module.exports = setup({
   callbacks: [],
   logger,
   fileLogger,
+  forceExitAfter: 10000,
 });

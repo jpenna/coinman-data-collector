@@ -1,79 +1,150 @@
 const fs = require('fs');
-const dbDebug = require('debug')('collector:persist');
-const errorsLog = require('simple-node-logger').createSimpleLogger('logs/errors.log');
+const debug = require('debug')('collector:persist');
+const fileLog = require('simple-node-logger').createSimpleLogger('logs/errors.log');
 
 const { gracefulExit } = require('graceful-exit');
 
 class DbManager {
-  constructor({ pairs }) {
+  constructor({ sourceSet }) {
     this.writing = new Map();
-    this.pairs = pairs;
+    this.sourceSet = sourceSet;
     this.writeStreams = new Map();
     this.notFirstWrite = new Set();
-    gracefulExit(this.onExit.bind(this));
-    this.setStreams();
+    gracefulExit(this._onExit.bind(this));
+    this._setStreams();
   }
 
-  onExit() {
+  _onExit() {
     return new Promise((function rerun(resolve) {
       const { length: wait } = Array.from(this.writing.values()).filter(v => v);
       if (!wait) {
-        // this.writeStreams.forEach(stream => stream.end(']'));
-        resolve();
+        return this._cleanFolder()
+          .then(resolve);
       }
-      dbDebug(`Waiting all writes to finish. Count: ${wait}`);
+      debug(`Waiting all writes to finish. Count: ${wait}`);
       setTimeout(rerun.bind(this, resolve), 100);
     }).bind(this));
   }
 
-  setStreams() {
-    fs.mkdirSync(`logs/${global.timeCoinmanCollectorStarted}`);
-    this.pairs.forEach((pair) => {
-      const fd = fs.openSync(`logs/${global.timeCoinmanCollectorStarted}/${pair}_ws.coinman`, 'wx');
-      const writeStream = fs.createWriteStream(null, { fd, encoding: 'ascii' });
+  _cleanFolder() {
+    const promises = [];
+    const folderSet = new Set();
 
-      writeStream.on('error', (err) => { // eslint-disable-line
-        dbDebug(`Error writing to Stream ${pair}`, err);
-        errorsLog.error(`Error writing to Stream ${pair}`, err);
-      }); // eslint-disable-line
-      writeStream.on('drain', function () { // eslint-disable-line
-        this.writing.set(pair, false);
+    this.writeStreams.forEach((stream) => {
+      const promise = new Promise((resolve) => {
+        let done = 0; // Wait for both unlinks to finish
+        const [prefix, folder, name] = stream.path.split('/');
+        const [source, pair, interval] = name.split('_');
+        folderSet.add(`${prefix}/${folder}`);
+
+        const callback = (skip, err) => {
+          if (!skip) err = skip;
+          if (err) {
+            debug('Could not remove file', err);
+            fileLog.error('Could not remove file', err);
+          } else if (!skip) {
+            debug(`Deleted file (${(stream.bytesWritten / 1000).toFixed(1)} kb): ${stream.path}`);
+          }
+          if (done === 1) return resolve();
+          return done++;
+        };
+
+        // 10800 records (approx. 6 hours)
+        if (stream.bytesWritten > 1501200) return resolve();
+
+        fs.unlink(stream.path, callback);
+        const restPath = `${prefix}/${folder}/${source}_${pair}_${interval}_rest.json`;
+        fs.unlink(restPath, callback.bind(this, true));
       });
 
-      const originalWrite = Object.getPrototypeOf(writeStream).write;
+      promises.push(promise);
+    });
 
-      writeStream.write = (function newWrite(_pair, notFirstWrite, string) {
-        if (notFirstWrite.has(_pair)) {
-          writeStream.write = originalWrite;
-          return writeStream.write(string);
-        }
-        const nlRemoved = string.substr(1);
-        notFirstWrite.add(_pair);
-        return originalWrite.call(writeStream, nlRemoved);
-      }).bind(writeStream, pair, this.notFirstWrite);
+    return Promise.all(promises)
+      .then(() => {
+        const folderPromises = [];
 
-      this.writeStreams.set(pair, writeStream);
+        folderSet.forEach((folder) => {
+          const fPromise = new Promise((resolve) => {
+            fs.readdir(folder, (e, files) => {
+              if (files.length > 0) return resolve();
+
+              fs.rmdir(folder, (err) => {
+                if (err) {
+                  debug(`Couldn't remove folder: ${folder}`, err);
+                  fileLog.error(`Couldn't remove folder: ${folder}`, err);
+                } else {
+                  debug(`Empty folder removed: ${folder}`);
+                }
+                resolve();
+              });
+            });
+          });
+
+          folderPromises.push(fPromise);
+        });
+
+        return Promise.all(folderPromises);
+      });
+  }
+
+  _setStreams() {
+    fs.mkdirSync(`logs/${global.timeCoinmanCollectorStarted}`);
+    this.sourceSet.forEach((info) => {
+      info.pairs.forEach((pair) => {
+        const name = `${info.source}_${pair}_${info.interval}_ws.coinman`;
+        const path = `logs/${global.timeCoinmanCollectorStarted}/${name}`;
+        const uid = `${info.source}${pair}${info.interval}`;
+        const fd = fs.openSync(path, 'wx');
+        // Set path for cleaning
+        const writeStream = fs.createWriteStream(path, { fd, encoding: 'ascii' });
+
+        writeStream.on('error', (err) => { // eslint-disable-line
+          debug(`Error writing to Stream ${pair}`, err);
+          fileLog.error(`Error writing to Stream ${pair}`, err);
+        }); // eslint-disable-line
+        writeStream.on('drain', function () { // eslint-disable-line
+          this.writing.set(uid, false);
+        });
+
+        const originalWrite = Object.getPrototypeOf(writeStream).write;
+
+        writeStream.write = (function newWrite(_uid, notFirstWrite, string) {
+          if (notFirstWrite.has(_uid)) {
+            writeStream.write = originalWrite;
+            return writeStream.write(string);
+          }
+          const nlRemoved = string.substr(1);
+          notFirstWrite.add(_uid);
+          return originalWrite.call(writeStream, nlRemoved);
+        }).bind(writeStream, uid, this.notFirstWrite);
+
+        this.writeStreams.set(uid, writeStream);
+      });
     });
   }
 
   isReady() {
+    let numberOfFiles = 0;
+    this.sourceSet.forEach(i => numberOfFiles += i.pairs.length);
     return new Promise((function rerun(res) {
       setTimeout(() => {
-        if (this.writeStreams.size === this.pairs.length) return res();
+        if (this.writeStreams.size === numberOfFiles) return res();
         rerun(res);
       }, 100);
     }).bind(this));
   }
 
-  addKline(pair, data) {
-    const ready = this.writeStreams.get(pair).write(`\n${data}`);
-    if (!ready) this.writing.set(pair, true);
+  addKline(pair, source, interval, data) {
+    const uid = `${source}${pair}${interval}`;
+    const ready = this.writeStreams.get(uid).write(`\n${data}`);
+    if (!ready) this.writing.set(uid, true);
   }
 
-  writeREST({ pair, data }) { // eslint-disable-line
-    const path = `logs/${global.timeCoinmanCollectorStarted}/${pair}_rest.json`;
+  writeREST({ pair, source, interval, data }) { // eslint-disable-line
+    const path = `logs/${global.timeCoinmanCollectorStarted}/${source}_${pair}_${interval}_rest.json`;
     fs.writeFile(path, JSON.stringify(data), (err) => {
-      if (err) dbDebug(`Error writing to REST ${pair}`, err);
+      if (err) debug(`Error writing to REST ${pair}`, err);
     });
   }
 }

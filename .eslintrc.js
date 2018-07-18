@@ -1,7 +1,7 @@
 module.exports = {
   "extends": "airbnb-base",
   "rules": {
-    "object-curly-newline": ["error", {
+    "object-curly-newline": ["warn", {
       "ObjectPattern": { "multiline": false },
       "ImportDeclaration": { "consistent": true }
     }],
@@ -13,6 +13,9 @@ module.exports = {
       "ignoreTrailingComments": true,
     }],
     "no-plusplus": 0,
-    "no-underscore-dangle": ["allow"],
+    "no-underscore-dangle": 0,
+    "no-return-assign": 0,
+    "no-param-reassign": 0,
+    "func-names": 0,
   }
 };

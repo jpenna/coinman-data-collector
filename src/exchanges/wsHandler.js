@@ -45,7 +45,7 @@ class WsHandler {
     if (!this.newBinanceWS) return;
     this.binanceWS.drop();
     this.binanceWS = this.newBinanceWS;
-    this.sendMessage(`🔗 New WS connected`);
+    this.sendMessage('🔗 New WS connected');
   }
 
   start() {
@@ -83,7 +83,7 @@ class WsHandler {
       this.processReplace();
     } else if (this.newBinanceWS && !startReplace) {
       this.dropNewBinanceWS();
-      this.sendMessage(`🔗 Reconnected with same WS`);
+      this.sendMessage('🔗 Reconnected with same WS');
     } else if (!this.newBinanceWS && this.binanceWS.missingPairs.size) {
       console.log(`Start singles (${this.binanceWS.instance})`);
       this.binanceWS.createSingleWS();

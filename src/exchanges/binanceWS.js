@@ -23,7 +23,6 @@ class BinanceWS {
 
     this.reportAllConnected = allConnected;
 
-
     // For logging
     this.instance = instancesCount;
     instancesCount++;
@@ -47,6 +46,8 @@ class BinanceWS {
 
   createSingleWS() {
     this.missingPairs.forEach((pair) => {
+      const connectingSingle = this.connectingSingleWSMap.get(pair);
+      if (connectingSingle) this.dropSingle(pair, true);
       this.connectSingle({ pair });
     });
   }
@@ -79,6 +80,8 @@ class BinanceWS {
         callback(data);
       }).bind(this),
     );
+    const singleConnecting = this.connectingSingleWSMap.get(pair);
+
     this.connectingSingleWSMap.set(pair, singleWS);
   }
 
@@ -96,6 +99,7 @@ class BinanceWS {
         combinedWS.then(s => s.disconnect && s.disconnect());
       };
     });
+    this.connectingSingleWSMap.forEach((v, k) => this.dropSingle(k, true));
     this.singleWSMap.forEach((v, k) => this.dropSingle(k));
   }
 
@@ -124,13 +128,14 @@ class BinanceWS {
       const data = msg.data || msg;
       const { k: { s: pair } } = data;
       if (this.connectingSingleWSMap.has(pair)) {
-        console.log('dropping single that is connecting pair');
+        console.log('dropping single that is connectING pair');
         this.dropSingle(pair, true);
       }
       if (!single && this.singleWSMap.has(pair)) {
         console.log('this is not single, dropping single that is connected');
         return this.dropSingle(pair);
       }
+
       this.missingPairs.refresh(pair, this.instance);
       this.letterMan.receivedBinanceCandle(pair, data);
     }).bind(this);

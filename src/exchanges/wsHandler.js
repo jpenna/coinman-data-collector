@@ -40,11 +40,11 @@ class WsHandler {
     });
   }
 
-  // TODO If 3 are missing in main, replace cnx. Else dont replace, just reconnect the missing one. Skip this coin from main. If received back from the main, replace usage and drop the single cnx.
   replace() {
     if (!this.newBinanceWS) return;
     this.binanceWS.drop();
     this.binanceWS = this.newBinanceWS;
+    this.newBinanceWS = null; // GC
     this.sendMessage('🔗 New WS connected');
   }
 

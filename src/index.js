@@ -14,9 +14,9 @@ const {
   LetterMan,
 } = require('./core');
 
-// const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
+const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
 // const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
-const pairs = ['ETHBTC', 'XRPBTC'];
+// const pairs = ['ETHBTC', 'XRPBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 
@@ -38,9 +38,10 @@ const init = fetcher({ binanceRest: bnbRest, pairs });
 
 let interval = 1000;
 
+const dbManagerStarting = dbManager.setStreams();
+
 async function startCollecting() {
   let data;
-  const dbManagerStarting = dbManager.setStreams();
 
   try {
     data = await init.fetchInitialData();

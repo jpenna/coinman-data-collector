@@ -57,6 +57,10 @@ class DbManager {
   }
 
   _cleanFolder() {
+    // If more than 10 hours recording, don't remove anything
+    const date = (new Date(this.startTimeString)).getTime();
+    if (Date.now() - date > 36000000) return Promise.resolve();
+
     const promises = [];
     const folderSet = new Set();
 

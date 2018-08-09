@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start": "if-env NODE_ENV=production ?? npm run start:prod || npm run start:dev",
-    "start:dev": "DEBUG='collector:*' nodemon -r dotenv/config src --ignore 'logs/'",
-    "survive": "DEBUG='collector:*' node -r dotenv/config src",
+    "start:dev": "DEBUG='collector:*,binanceLib' nodemon -r dotenv/config src --ignore 'logs/'",
+    "survive": "DEBUG='collector:*,binanceLib' node -r dotenv/config src",
     "start:prod": "node -r dotenv/config src",
-    "debug": "DEBUG='collector:*' node -r dotenv/config --inspect-brk=9229 src",
+    "debug": "DEBUG='collector:*,binanceLib' node -r dotenv/config --inspect-brk=9229 src",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Juliano Penna <julianopenna@gmail.com>",

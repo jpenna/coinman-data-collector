@@ -2,7 +2,7 @@ module.exports = ({ binanceRest, pairs }) => ({
   fetchInitialData() {
     const klines = pairs.map(pair => binanceRest.klines({
       symbol: pair,
-      limit: 500,
+      limit: 1000,
       interval: '1m',
     }));
 

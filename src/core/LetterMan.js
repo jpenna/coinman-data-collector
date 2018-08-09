@@ -18,9 +18,22 @@ class LetterMan {
   }
 
   receivedBinanceCandle(pair, data) {
-    // eventTime startTime closeTime open close high low volumeQuote volumeBase takerBuyVolumeQuote takerBuyVolumeBase numberOfTrades lastKline
-    const kline = `${data.E} ${data.k.t} ${data.k.T} ${data.k.o} ${data.k.c} ${data.k.h} ${data.k.l} ${data.k.v} ${data.k.q} ${data.k.V} ${data.k.Q} ${data.k.n} ${data.k.x ? 1 : 0}`;
+    // ALERT: Asset and Base names are inverted here and from BNB
+    // startTime closeTime open close high low volumeQuote volumeBase takerBuyVolumeQuote takerBuyVolumeBase numberOfTrades
+    const { k } = data;
+    const kline = `${k.t} ${k.T} ${k.o} ${k.c} ${k.h} ${k.l} ${k.v} ${k.q} ${k.V} ${k.Q} ${k.n}`;
     this.dbManager.addKline(pair, 'BNB', '30m', kline);
+  }
+
+  initialBinanceCandles({ pair, interval, data }) {
+    // ALERT: Asset and Base names are inverted here and from BNB
+    // startTime closeTime open close high low volumeQuote volumeBase takerBuyVolumeQuote takerBuyVolumeBase numberOfTrades
+    let string = '';
+    data.forEach((d) => {
+      string += `${d[0]} ${d[6]} ${d[1]} ${d[4]} ${d[2]} ${d[3]} ${d[5]} ${d[7]} ${d[9]} ${d[10]} ${d[8]}\n`;
+    });
+    const klines = string.substr(0, string.length - 1);
+    this.dbManager.addKline(pair, 'BNB', interval, klines);
   }
 }
 

@@ -57,9 +57,8 @@ async function startCollecting() {
   await dbManagerStarting;
 
   data.forEach((d, index) => {
-    dbManager.writeREST({
+    letterMan.initialBinanceCandles({
       pair: pairs[index],
-      source: 'BNB',
       interval: '30m',
       data: d,
     });

@@ -68,8 +68,7 @@ class DbManager {
       const promise = new Promise((resolve) => {
         let done = 0; // Wait for both unlinks to finish
         const [prefix, folder, name] = stream.path.split('/');
-        const [source, pair, interval, p] = name.split('_');
-        const part = Number.parseInt(p.replace('.coinman', ''), 10);
+        const [source, pair, interval] = name.split('_');
 
         folderSet.add(`${prefix}/${folder}`);
 
@@ -89,12 +88,6 @@ class DbManager {
         if (stream.bytesWritten > 1501200) return resolve();
 
         fs.unlink(stream.path, callback);
-
-        // If it was split, don't remove the REST data
-        if (part > 0) return done++;
-
-        const restPath = `${prefix}/${folder}/${source}_${pair}_${interval}_rest.json`;
-        fs.unlink(restPath, callback.bind(this, true));
       });
 
       promises.push(promise);
@@ -184,13 +177,6 @@ class DbManager {
     const uid = DbManager.getUid({ source, pair, interval });
     const ready = this.writeStreams.get(uid).write(`\n${data}`);
     if (!ready) this.writing.set(uid, true);
-  }
-
-  writeREST({ pair, source, interval, data }) { // eslint-disable-line
-    const path = `logs/${this.startTimeString}/${source}_${pair}_${interval}_rest.json`;
-    fs.writeFile(path, JSON.stringify(data), (err) => {
-      if (err) debug(`Error writing to REST ${pair}`, err);
-    });
   }
 }
 

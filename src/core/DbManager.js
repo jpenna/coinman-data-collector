@@ -136,7 +136,7 @@ class DbManager {
         fileLog.error(`Error writing to Stream ${pair}`, err);
       });
 
-      writeStream.on('drain', function () {
+      writeStream.on('drain', () => {
         this.writing.set(uid, false);
       });
 

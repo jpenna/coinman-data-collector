@@ -1,8 +1,8 @@
 const fs = require('fs');
 const debug = require('debug')('collector:persist');
-const fileLog = require('simple-node-logger').createSimpleLogger('logs/errors.log');
+const fileLog = require('simple-node-logger').createSimpleFileLogger('logs/errors.log');
 
-const { gracefulExit } = require('graceful-exit');
+const { gracefulExit } = require('gracefully-exit');
 
 class DbManager {
   constructor({ sourceSet }) {

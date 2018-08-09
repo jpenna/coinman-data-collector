@@ -1,11 +1,11 @@
-const { setup } = require('graceful-exit');
+const { setup } = require('gracefully-exit');
 
-const logger = require('simple-node-logger').createSimpleLogger('logs/errors.log');
+const logger = require('simple-node-logger').createSimpleFileLogger('logs/errors.log');
 const fileLogger = require('debug')('collector:process:error');
 
 module.exports = setup({
   callbacks: [],
-  logger,
   fileLogger,
+  logger,
   forceTimeout: 10000,
 });

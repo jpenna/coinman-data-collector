@@ -66,22 +66,22 @@ class DbManager {
 
     this.writeStreams.forEach((stream) => {
       const promise = new Promise((resolve) => {
-        let done = 0; // Wait for both unlinks to finish
         const [prefix, folder, name] = stream.path.split('/');
-        const [source, pair, interval] = name.split('_');
+        const [,,, p] = name.split('_');
+        const part = Number.parseInt(p.replace('.coinman', ''), 10);
+
+        if (part > 0) return;
 
         folderSet.add(`${prefix}/${folder}`);
 
-        const callback = (skip, err) => {
-          if (!skip) err = skip;
+        const callback = (err) => {
           if (err) {
             debug('Could not remove file', err);
             fileLog.error('Could not remove file', err);
-          } else if (!skip) {
+          } else {
             debug(`Deleted file (${(stream.bytesWritten / 1000).toFixed(1)} kb): ${stream.path}`);
           }
-          if (done === 1) return resolve();
-          return done++;
+          resolve();
         };
 
         // 10800 records (approx. 6 hours)

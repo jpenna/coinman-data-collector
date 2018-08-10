@@ -78,3 +78,19 @@ Oldest first, newest last
   ] 
 ]
 ```
+
+# Collector Websoket API
+
+```ts
+{
+  t <Number // Type
+    0: initial,
+    1: periodic segment,
+  >,
+  e <Number
+    0: Binance,
+  >, // Exchange
+  d <Object>, // Data
+  // ... more info
+}
+```

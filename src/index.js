@@ -12,11 +12,12 @@ const {
   DbManager,
   fetcher,
   LetterMan,
+  Websocket,
 } = require('./core');
 
-const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
+// const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
 // const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
-// const pairs = ['ETHBTC', 'XRPBTC'];
+const pairs = ['ETHBTC', 'XRPBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 
@@ -24,8 +25,9 @@ const { sendMessage } = telegram.init();
 
 const sourceSet = new Set([{ source: 'BNB', interval: '30m', pairs }]);
 
+const websocket = new Websocket({});
 const dbManager = new DbManager({ sourceSet });
-const letterMan = new LetterMan({ dbManager, extraInfoSymbol });
+const letterMan = new LetterMan({ dbManager, extraInfoSymbol, websocket });
 
 const binanceRest = require('./exchanges/binanceRest');
 const WsHandler = require('./exchanges/wsHandler');
@@ -44,6 +46,7 @@ async function startCollecting() {
   let data;
 
   try {
+    // TODO 2 refetch only the missing assets, not all
     data = await init.fetchInitialData();
   } catch (e) {
     errorLog('Error fetching initial data. Retrying.', e);

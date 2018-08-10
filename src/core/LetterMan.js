@@ -1,7 +1,8 @@
 class LetterMan {
-  constructor({ dbManager, extraInfoSymbol }) {
+  constructor({ dbManager, extraInfoSymbol, websocket }) {
     this.dbManager = dbManager;
     this.extraInfoSymbol = extraInfoSymbol;
+    this.websocket = websocket;
 
     process.on('cleanup', LetterMan.cleanupModule.bind(this));
   }
@@ -23,6 +24,8 @@ class LetterMan {
     const { k } = data;
     const kline = `${k.t} ${k.T} ${k.o} ${k.c} ${k.h} ${k.l} ${k.v} ${k.q} ${k.V} ${k.Q} ${k.n}`;
     this.dbManager.addKline(pair, 'BNB', '30m', kline);
+    // type: periodic segment, exchange: BNB
+    this.websocket.broadcast({ t: 1, e: 0, d: kline });
   }
 
   initialBinanceCandles({ pair, interval, data }) {
@@ -34,6 +37,8 @@ class LetterMan {
     });
     const klines = string.substr(0, string.length - 1);
     this.dbManager.addKline(pair, 'BNB', interval, klines);
+    // type: initial, exchange: BNB
+    this.websocket.broadcast({ t: 1, e: 0, d: klines });
   }
 }
 

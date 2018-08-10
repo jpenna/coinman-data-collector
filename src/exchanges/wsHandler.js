@@ -14,6 +14,7 @@ class WsHandler {
     this.startTime = Date.now();
   }
 
+  // TODO 4 fetch missing data from REST and send it, so it wont have holes for too long
   pairsTimeout() {
     const text = `Timeout. All websockets did not connect on time (2 min)(${this.binanceWS.instance})`;
     logger(text);

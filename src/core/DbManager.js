@@ -124,7 +124,7 @@ class DbManager {
   _createStream({ source, interval, pair, part }) {
     return new Promise((resolve) => {
       const name = `${source}_${pair}_${interval}_${part}.coinman`;
-      const path = `logs/${this.startTimeString}/${name}`;
+      const path = `data/${this.startTimeString}/${name}`;
       const uid = DbManager.getUid({ source, pair, interval });
 
       const fd = fs.openSync(path, 'wx');
@@ -158,7 +158,7 @@ class DbManager {
   }
 
   setStreams() {
-    fs.mkdirSync(`logs/${this.startTimeString}`);
+    fs.mkdirSync(`data/${this.startTimeString}`);
     const promises = [];
     this.sourceSet.forEach((info) => {
       info.pairs.forEach((pair) => {

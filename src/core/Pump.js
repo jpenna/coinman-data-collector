@@ -1,3 +1,8 @@
+/* eslint-disable class-methods-use-this */
+
+const fs = require('fs');
+const debug = require('debug')('collector:pump');
+
 // STARTUP
 // open logs and get folder names, create list of folder names
 // open 1st folder, get all file names, create list with file names (ws)
@@ -21,27 +26,57 @@ class Pump {
 
   // }
 
-  start(ws, data) {
-    fs.readdir('logs', { encoding: 'ascii' }, (files) => {
-      console.log('files', files);
-
-
+  static getFolderContent(path) {
+    return new Promise((resolve, reject) => {
+      fs.readdir(path, (err, names) => {
+        if (err) {
+          debug(`Error reading folder content (${path})`, err);
+          reject(err);
+        }
+        resolve(names);
+      });
     });
   }
 
-  // getNextFolder() {
+  static pipeFolder(path) {
+    return this.getFolderContent(path)
+      .then((fileNames) => {
+        const promises = Promise.all(fileNames.map((name) => {
+          const promise = new Promise((resolve, reject) => {
+            const options = { encoding: 'ascii' };
+            const readable = fs.createReadStream(`${path}/${name}`, options);
 
-  // }
+            readable.on('data', (chunk) => {
+              console.log(chunk);
+            });
 
-  // getNextFile() {
+            readable.on('end', () => resolve());
 
-  // }
+            readable.on('error', err => reject(err));
+          });
 
-  // startNext(ws) {
-  //   ws.send('newREST', { pair, });
-  //   ws.send('newTick', { pair, });
+          return promise;
+        }));
 
-  // }
+        return promises;
+      });
+  }
+
+  start(ws, data) {
+    const root = process.env.ENV === 'test' ? 'test/data' : 'data';
+    Pump.getFolderContent(root)
+      .then((folders) => {
+        return Promise.all(folders.map(f => Pump.pipeFolder(`${root}/${f}`)));
+      })
+      .then((files) => {
+        ws.send(files);
+        console.log('END ALL');
+      })
+      .catch((err) => {
+        debug(err);
+        ws.send({ err });
+      });
+  }
 }
 
 module.exports = Pump;

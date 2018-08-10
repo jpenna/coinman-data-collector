@@ -91,6 +91,7 @@ Oldest first, newest last
     0: Binance,
   >, // Exchange
   d <Object>, // Data
+  err <Error>,
   // ... more info
 }
 ```

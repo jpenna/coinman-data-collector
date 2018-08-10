@@ -50,6 +50,7 @@ class WsHandler {
   }
 
   start() {
+    if (!this.pairs.length) return; // Only for development (testing)
     logger('Start WS Handler');
     this.binanceWS = new BinanceWS({
       beautify: false,

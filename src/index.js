@@ -8,6 +8,9 @@ const { extraInfoSymbol } = require('./tools/gracefulExit');
 try {
   fs.mkdirSync('logs');
 } catch (e) { /* empty */ }
+try {
+  fs.mkdirSync('data');
+} catch (e) { /* empty */ }
 
 const {
   telegram,
@@ -18,9 +21,9 @@ const {
   Pump,
 } = require('./core');
 
-// const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
-// const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
-const pairs = ['ETHBTC', 'XRPBTC'];
+// const pairs = process.env.NO_PAIRS ? [] : ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
+const pairs = process.env.NO_PAIRS ? [] : ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
+// const pairs = process.env.NO_PAIRS ? [] : ['ETHBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 
@@ -28,7 +31,7 @@ const { sendMessage } = telegram.init();
 
 const sourceSet = new Set([{ source: 'BNB', interval: '30m', pairs }]);
 
-const pump = new Pump({});
+const pump = new Pump();
 const websocket = new Websocket({ pump });
 const dbManager = new DbManager({ sourceSet });
 const letterMan = new LetterMan({ dbManager, extraInfoSymbol, websocket });

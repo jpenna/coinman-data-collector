@@ -2,6 +2,7 @@
 
 const Websocket = require('ws');
 const wsDebug = require('debug')('collector:Websocket');
+const systemDebug = require('debug')('collector:system');
 const errorsLog = require('simple-node-logger').createSimpleFileLogger('logs/errors.log');
 
 const { gracefulExit } = require('gracefully-exit');
@@ -18,7 +19,7 @@ class CollectorWS {
       },
     });
 
-    wsDebug('Collector Websocket running');
+    systemDebug('Collector Websocket running');
 
     this.setListeners();
     this.setupPing();

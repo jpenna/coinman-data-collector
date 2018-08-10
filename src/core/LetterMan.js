@@ -38,7 +38,7 @@ class LetterMan {
     const klines = string.substr(0, string.length - 1);
     this.dbManager.addKline(pair, 'BNB', interval, klines);
     // type: initial, exchange: BNB
-    this.websocket.broadcast({ t: 1, e: 0, d: klines });
+    this.websocket.broadcast({ t: 0, e: 0, d: klines });
   }
 }
 

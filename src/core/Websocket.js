@@ -7,7 +7,8 @@ const errorsLog = require('simple-node-logger').createSimpleFileLogger('logs/err
 const { gracefulExit } = require('gracefully-exit');
 
 class CollectorWS {
-  constructor() {
+  constructor({ pump }) {
+    this.pump = pump;
     this.wss = new Websocket.Server({
       port: process.env.WS_PORT,
       clientTracking: true,
@@ -34,6 +35,15 @@ class CollectorWS {
   setListeners() {
     this.wss.on('connection', function connection(ws) {
       ws.isAlive = true;
+
+      ws.on('message', ({ type, data }) => {
+        switch (type) {
+          case 'backtest':
+            this.pump.start(ws, data);
+            break;
+        }
+      });
+
       ws.on('pong', CollectorWS.heartbeat);
 
       ws.on('close', (code, reason) => {

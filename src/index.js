@@ -1,3 +1,5 @@
+const express = require('express');
+const bodyParser = require('body-parser');
 const fs = require('fs');
 const errorLog = require('debug')('collector:core');
 const debugSystem = require('debug')('collector:system');
@@ -13,6 +15,7 @@ const {
   fetcher,
   LetterMan,
   Websocket,
+  Pump,
 } = require('./core');
 
 // const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
@@ -25,9 +28,11 @@ const { sendMessage } = telegram.init();
 
 const sourceSet = new Set([{ source: 'BNB', interval: '30m', pairs }]);
 
-const websocket = new Websocket({});
+const pump = new Pump({});
+const websocket = new Websocket({ pump });
 const dbManager = new DbManager({ sourceSet });
 const letterMan = new LetterMan({ dbManager, extraInfoSymbol, websocket });
+// const letterMan = new LetterMan({ dbManager, extraInfoSymbol, websocket: { broadcast: () => {} } });
 
 const binanceRest = require('./exchanges/binanceRest');
 const WsHandler = require('./exchanges/wsHandler');
@@ -71,3 +76,12 @@ async function startCollecting() {
 }
 
 startCollecting();
+
+const app = express();
+app.use(bodyParser.json());
+
+app.post('/backtest', (req, res) => pump.start(res, req.body));
+
+app.listen(process.env.REST_PORT, () => {
+  debugSystem(`Collector REST on port ${process.env.REST_PORT}`);
+});

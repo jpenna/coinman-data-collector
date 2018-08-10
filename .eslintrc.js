@@ -17,5 +17,6 @@ module.exports = {
     "no-return-assign": 0,
     "no-param-reassign": 0,
     "func-names": 0,
+    "default-case": 0,
   }
 };

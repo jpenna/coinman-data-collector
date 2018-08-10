@@ -1,7 +1,10 @@
 /* eslint-disable class-methods-use-this */
 
 const fs = require('fs');
+const readline = require('readline');
 const debug = require('debug')('collector:pump');
+
+const utils = require('../tools/utils');
 
 // STARTUP
 // open logs and get folder names, create list of folder names
@@ -38,43 +41,73 @@ class Pump {
     });
   }
 
-  static pipeFolder(path) {
+  static pipeFolder(path, ws) {
     return this.getFolderContent(path)
       .then((fileNames) => {
-        const promises = Promise.all(fileNames.map((name) => {
-          const promise = new Promise((resolve, reject) => {
-            const options = { encoding: 'ascii' };
-            const readable = fs.createReadStream(`${path}/${name}`, options);
+        const groups = new Map();
 
-            readable.on('data', (chunk) => {
-              console.log(chunk);
+        fileNames.forEach((fileName) => {
+          const [exchange, pair, interval, end] = fileName.split('_');
+          const part = Number.parseInt(end.split('.')[0], 10);
+          const key = `${exchange}${pair}${interval}`;
+          const group = groups.get(key) || [];
+          group[part] = fileName;
+          groups.set(key, group);
+        });
+
+        const promises = [];
+
+        Array.from(groups)
+          .map(([, group]) => group.map((name) => {
+            const promise = new Promise((resolve, reject) => {
+              const options = { encoding: 'ascii' };
+              const readable = fs.createReadStream(`${path}/${name}`, options);
+              const [exchange, pair] = name.split('_');
+              const exchangeCode = utils.exchangeMap.get(exchange);
+
+              const rl = readline.createInterface({
+                input: readable,
+                historySize: 0,
+              });
+
+              rl.on('line', line => ws.send({
+                p: pair,
+                t: 1,
+                e: exchangeCode,
+                d: line,
+              }));
+
+              rl.on('close', () => resolve());
+
+              readable.on('error', err => reject(err));
             });
 
-            readable.on('end', () => resolve());
+            promises.push(promise);
+          }));
 
-            readable.on('error', err => reject(err));
-          });
-
-          return promise;
-        }));
-
-        return promises;
+        return Promise.all(promises);
       });
   }
 
   start(ws, data) {
-    const root = process.env.ENV === 'test' ? 'test/data' : 'data';
+    const root = process.env.NODE_ENV === 'test' ? 'test/data' : 'data';
     Pump.getFolderContent(root)
       .then((folders) => {
-        return Promise.all(folders.map(f => Pump.pipeFolder(`${root}/${f}`)));
+        // Run one single folder at a time, when finished, go to next one
+        let chain;
+        const nodes = folders.map(f => (() => Pump.pipeFolder(`${root}/${f}`, ws)));
+        nodes.forEach((node) => {
+          if (chain) return chain.then(node);
+          chain = node();
+        });
+        return chain;
       })
-      .then((files) => {
-        ws.send(files);
-        console.log('END ALL');
+      .then(() => {
+        ws.send('end');
       })
       .catch((err) => {
         debug(err);
-        ws.send({ err });
+        ws.send({ err: err.name, msg: err.message });
       });
   }
 }

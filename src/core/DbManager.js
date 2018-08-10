@@ -158,6 +158,7 @@ class DbManager {
   }
 
   setStreams() {
+    if (!process.env.nopairs) return;
     fs.mkdirSync(`data/${this.startTimeString}`);
     const promises = [];
     this.sourceSet.forEach((info) => {

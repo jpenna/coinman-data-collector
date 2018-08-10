@@ -25,7 +25,7 @@ class LetterMan {
     const kline = `${k.t} ${k.T} ${k.o} ${k.c} ${k.h} ${k.l} ${k.v} ${k.q} ${k.V} ${k.Q} ${k.n}`;
     this.dbManager.addKline(pair, 'BNB', '30m', kline);
     // type: periodic segment, exchange: BNB
-    this.websocket.broadcast({ t: 1, e: 0, d: kline });
+    this.websocket.broadcast({ p: pair, t: 1, e: 0, d: kline });
   }
 
   initialBinanceCandles({ pair, interval, data }) {
@@ -38,7 +38,7 @@ class LetterMan {
     const klines = string.substr(0, string.length - 1);
     this.dbManager.addKline(pair, 'BNB', interval, klines);
     // type: initial, exchange: BNB
-    this.websocket.broadcast({ t: 0, e: 0, d: klines });
+    this.websocket.broadcast({ p: pair, t: 0, e: 0, d: klines });
   }
 }
 

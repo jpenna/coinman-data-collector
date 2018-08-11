@@ -6,7 +6,7 @@
   "scripts": {
     "start": "if-env NODE_ENV=production ?? npm run start:prod || npm run start:dev",
     "nopairs": "NODE_ENV=test NO_PAIRS=true WS_PORT=4903 REST_PORT=6008 npm start",
-    "start:dev": "DEBUG_HIDE_DATE=false DEBUG='collector:*,binanceLib' nodemon -r dotenv/config src --ignore 'logs/'",
+    "start:dev": "DEBUG_HIDE_DATE=false DEBUG='collector:*,binanceLib' nodemon -r dotenv/config src --ignore 'logs/' --ignore 'test/'",
     "pump": "nodemon -r dotenv/config test/connectPump",
     "survive": "DEBUG_HIDE_DATE=false DEBUG='collector:*,binanceLib' node -r dotenv/config src",
     "start:prod": "node -r dotenv/config src",

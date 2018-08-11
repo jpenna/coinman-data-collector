@@ -20,7 +20,6 @@ class Pump {
   }
 
   static pipeFolder(path, ws, data) {
-    console.log('path', path);
     const [,, timestamp] = path.split('/');
     const groupDate = new Date(timestamp);
 
@@ -40,6 +39,12 @@ class Pump {
 
         fileNames.forEach((fileName) => {
           const [exchange, pair, interval, end] = fileName.split('_');
+          if (data.exchanges) {
+            if (!data.exchanges.includes(exchange)) return;
+          }
+          if (data.pairs) {
+            if (!data.pairs.includes(pair)) return;
+          }
           const part = Number.parseInt(end.split('.')[0], 10);
           const key = `${exchange}${pair}${interval}`;
           const group = groups.get(key) || [];
@@ -47,10 +52,12 @@ class Pump {
           groups.set(key, group);
         });
 
+        if (!groups.size) return Promise.resolve(true);
+
         const promises = [];
 
         Array.from(groups)
-          .map(([, group]) => group.map((name) => {
+          .forEach(([, group]) => group.forEach((name) => {
             const promise = new Promise((resolve, reject) => {
               const options = { encoding: 'ascii' };
               const readable = fs.createReadStream(`${path}/${name}`, options);
@@ -86,14 +93,15 @@ class Pump {
     Pump.getFolderContent(root)
       .then((folders) => {
         // Run one single folder at a time, when finished, go to next one
-        const nodes = folders.map(f => (() => Pump.pipeFolder(`${root}/${f}`, ws, data)));
-        return nodes.reduce((acc, node, i) => {
+        const groups = folders.map(f => (() => Pump.pipeFolder(`${root}/${f}`, ws, data)));
+        return groups.reduce((acc, node, i) => {
           return acc.then((filtered) => {
-            if (!i) return; // Skip 1st, it runs on initialValue
-            if (filtered === true) ws.send({ t: 10 }); // Next folder
+            if (filtered !== true) ws.send({ t: 10 }); // Next time group
+            if (!i) return true; // Skip 1st, it runs on initialValue
+
             return node();
           });
-        }, nodes[0]());
+        }, groups[0]());
       })
       .then(() => {
         ws.send({ t: 99 });

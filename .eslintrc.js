@@ -18,5 +18,6 @@ module.exports = {
     "no-param-reassign": 0,
     "func-names": 0,
     "default-case": 0,
+    "arrow-body-style": "warn",
   }
 };

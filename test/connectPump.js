@@ -9,13 +9,23 @@ ws.on('open', () => {
   ws.send(JSON.stringify({
     type: 'backtest',
     data: {
-      startDate: '2018-08-08T01:30:41.654Z',
+      startDate: '2018-08-14T01:30:41.654Z',
       endDate: '2018-08-15T01:30:41.654Z',
+      exchanges: ['BNB'],
+      pairs: ['ETHBTC'],
     },
   }));
 });
 
+let last = '';
+
 ws.on('message', (msg) => {
   const data = JSON.parse(msg);
-  console.log('got message', data.t, data.p);
+  if (`${data.t} ${data.p}` === last) return;
+  last = `${data.t} ${data.p}`;
+  console.log('message', data.t ? last : data);
 });
+
+ws.on('error', err => console.log(err));
+
+ws.on('close', (code, reason) => console.log('disconnected', code, reason));

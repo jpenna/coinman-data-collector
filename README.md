@@ -87,6 +87,8 @@ Oldest first, newest last
     0: initial,
     1: periodic segment,
     10: next folder start next,
+    101: pump - end,
+    102: pump - no folder in root,
   >,
   e <Number
     0: Binance,

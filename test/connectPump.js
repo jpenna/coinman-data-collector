@@ -1,6 +1,6 @@
 const Websocket = require('ws');
 
-const ws = new Websocket('ws://localhost:4903', {
+const ws = new Websocket(`ws://localhost:${process.env.WS_PUMP_PORT}`, {
   headers: { auth: process.env.PASSWORD_WS },
 });
 

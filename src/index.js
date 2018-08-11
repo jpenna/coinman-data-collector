@@ -18,7 +18,6 @@ const {
   fetcher,
   LetterMan,
   Websocket,
-  Pump,
 } = require('./core');
 
 // const pairs = process.env.NO_PAIRS ? [] : ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
@@ -31,8 +30,7 @@ const { sendMessage } = telegram.init();
 
 const sourceSet = new Set([{ source: 'BNB', interval: '30m', pairs }]);
 
-const pump = new Pump();
-const websocket = new Websocket({ pump });
+const websocket = new Websocket();
 const dbManager = new DbManager({ sourceSet });
 const letterMan = new LetterMan({ dbManager, extraInfoSymbol, websocket });
 // const letterMan = new LetterMan({ dbManager, extraInfoSymbol, websocket: { broadcast: () => {} } });

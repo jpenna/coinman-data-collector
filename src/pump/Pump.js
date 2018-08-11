@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const readline = require('readline');
-const debug = require('debug')('collector:pump');
+const debug = require('debug')('pump:Pump');
 
 const utils = require('../tools/utils');
 
@@ -92,6 +92,7 @@ class Pump {
     const root = process.env.NODE_ENV === 'test' ? 'test/data' : 'data';
     Pump.getFolderContent(root)
       .then((folders) => {
+        if (!folders.length) return ws.send({ t: 102 });
         // Run one single folder at a time, when finished, go to next one
         const groups = folders.map(f => (() => Pump.pipeFolder(`${root}/${f}`, ws, data)));
         return groups.reduce((acc, node, i) => {
@@ -104,7 +105,7 @@ class Pump {
         }, groups[0]());
       })
       .then(() => {
-        ws.send({ t: 99 });
+        ws.send({ t: 101 });
       })
       .catch((err) => {
         debug(err);

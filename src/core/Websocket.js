@@ -8,8 +8,7 @@ const errorsLog = require('simple-node-logger').createSimpleFileLogger('logs/err
 const { gracefulExit } = require('gracefully-exit');
 
 class CollectorWS {
-  constructor({ pump }) {
-    this.pump = pump;
+  constructor() {
     this.wss = new Websocket.Server({
       port: process.env.WS_PORT,
       clientTracking: true,
@@ -21,19 +20,19 @@ class CollectorWS {
 
     systemDebug('Collector Websocket running on port', process.env.WS_PORT);
 
-    this.setListeners();
-    this.setupPing();
+    this._setListeners();
+    this._setupPing();
 
     gracefulExit(function onExit() {
       this.wss.clients.forEach(c => c.terminate());
     }.bind(this));
   }
 
-  static heartbeat() {
+  static _heartbeat() {
     this.isAlive = true;
   }
 
-  setListeners() {
+  _setListeners() {
     this.wss.on('connection', (ws) => {
       ws.isAlive = true;
 
@@ -48,12 +47,12 @@ class CollectorWS {
 
         switch (type) {
           case 'backtest':
-            this.pump.start(ws, data);
+            // this.pump.start(ws, data);
             break;
         }
       });
 
-      ws.on('pong', CollectorWS.heartbeat);
+      ws.on('pong', CollectorWS._heartbeat);
 
       ws.on('close', (code, reason) => {
         wsDebug(`WS disconnected (${code}): ${reason}`);
@@ -67,14 +66,14 @@ class CollectorWS {
     });
   }
 
-  setupPing() {
+  _setupPing() {
     this.pingTimeout = setTimeout(function ping() {
       this.wss.clients.forEach((ws) => {
         if (!ws.isAlive) return ws.terminate();
         ws.isAlive = false; // eslint-disable-line no-param-reassign
         ws.ping(() => {});
       });
-      this.setupPing();
+      this._setupPing();
     }.bind(this), 10000);
   }
 

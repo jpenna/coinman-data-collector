@@ -1,5 +1,3 @@
-const express = require('express');
-const bodyParser = require('body-parser');
 const fs = require('fs');
 const errorLog = require('debug')('collector:core');
 const debugSystem = require('debug')('collector:system');
@@ -48,7 +46,7 @@ let interval = 1000;
 
 const dbManagerStarting = dbManager.setStreams();
 
-async function startCollecting() {
+(async function startCollecting() {
   let data;
 
   try {
@@ -74,15 +72,4 @@ async function startCollecting() {
   });
 
   wsHandler.start();
-}
-
-startCollecting();
-
-const app = express();
-app.use(bodyParser.json());
-
-app.post('/backtest', (req, res) => pump.start(res, req.body));
-
-app.listen(process.env.REST_PORT, () => {
-  debugSystem(`Collector REST on port ${process.env.REST_PORT}`);
-});
+}());

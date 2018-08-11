@@ -12,14 +12,14 @@ class DbManager {
     this.notFirstWrite = new Set();
     this.startTimeString = (new Date()).toISOString();
     gracefulExit(this._onExit.bind(this));
-    this.checkFileSizes(432000000); // 5 days
+    this._checkFileSizes(432000000); // 5 days
   }
 
-  static getUid({ source, pair, interval }) {
+  static _getUid({ source, pair, interval }) {
     return `${source}${pair}${interval}`;
   }
 
-  checkSplit(stream) {
+  _checkSplit(stream) {
     // 96076800 = 60*60*24*8 (8 days) * 139 (bytes/kline)
     if (stream.bytesWritten < 96076800) return;
 
@@ -28,18 +28,18 @@ class DbManager {
 
     debug(`Splitting file (${(stream.bytesWritten / 1000).toFixed(1)} kb): ${name}`);
 
-    const uid = DbManager.getUid({ source, pair, interval });
+    const uid = DbManager._getUid({ source, pair, interval });
 
     this.notFirstWrite.delete(uid);
     this._createStream({ source, interval, pair, part: +part + 1 })
       .then(() => stream.end());
   }
 
-  checkFileSizes(timeout) {
+  _checkFileSizes(timeout) {
     clearTimeout(this.checkFileSizesTimeout);
     this.checkFileSizesTimeout = setTimeout(() => {
-      this.writeStreams.forEach(stream => this.checkSplit(stream));
-      this.checkFileSizes(86400000); // 1 day
+      this.writeStreams.forEach(stream => this._checkSplit(stream));
+      this._checkFileSizes(86400000); // 1 day
     }, timeout);
   }
 
@@ -125,7 +125,7 @@ class DbManager {
     return new Promise((resolve) => {
       const name = `${source}_${pair}_${interval}_${part}.coinman`;
       const path = `data/${this.startTimeString}/${name}`;
-      const uid = DbManager.getUid({ source, pair, interval });
+      const uid = DbManager._getUid({ source, pair, interval });
 
       const fd = fs.openSync(path, 'wx');
       // Set path for cleaning
@@ -174,7 +174,7 @@ class DbManager {
   }
 
   addKline(pair, source, interval, data) {
-    const uid = DbManager.getUid({ source, pair, interval });
+    const uid = DbManager._getUid({ source, pair, interval });
     const ready = this.writeStreams.get(uid).write(`\n${data}`);
     if (!ready) this.writing.set(uid, true);
   }

@@ -3,7 +3,6 @@ const DbManager = require('./DbManager');
 const fetcher = require('./fetcher');
 const LetterMan = require('./LetterMan');
 const Websocket = require('./Websocket');
-const Pump = require('./Pump');
 
 module.exports = {
   telegram,
@@ -11,5 +10,4 @@ module.exports = {
   fetcher,
   LetterMan,
   Websocket,
-  Pump,
 };

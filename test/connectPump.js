@@ -9,7 +9,7 @@ ws.on('open', () => {
   ws.send(JSON.stringify({
     type: 'backtest',
     data: {
-      startDate: '2018-08-14T01:30:41.654Z',
+      startDate: '2018-08-01T01:30:41.654Z',
       endDate: '2018-08-15T01:30:41.654Z',
       exchanges: ['BNB'],
       pairs: ['ETHBTC'],

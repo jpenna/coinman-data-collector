@@ -90,6 +90,7 @@ class Pump {
 
   start(ws, data) {
     const root = process.env.NODE_ENV === 'test' ? 'test/data' : 'data';
+
     Pump.getFolderContent(root)
       .then((folders) => {
         if (!folders.length) return ws.send({ t: 102 });

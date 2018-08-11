@@ -14,12 +14,12 @@ class CollectorWS {
       port: process.env.WS_PORT,
       clientTracking: true,
       verifyClient: ({ req }) => {
-        console.log('req', req);
-        // TODO 1 use a hard coded password for this
+        if (req.headers.auth === process.env.PASSWORD_WS) return true;
+        return false;
       },
     });
 
-    systemDebug('Collector Websocket running');
+    systemDebug('Collector Websocket running on port', process.env.WS_PORT);
 
     this.setListeners();
     this.setupPing();
@@ -34,10 +34,18 @@ class CollectorWS {
   }
 
   setListeners() {
-    this.wss.on('connection', function connection(ws) {
+    this.wss.on('connection', (ws) => {
       ws.isAlive = true;
 
-      ws.on('message', ({ type, data }) => {
+      const send = ws.send.bind(ws);
+      ws.send = (msg) => {
+        send(JSON.stringify(msg));
+      };
+
+      ws.on('message', (msg) => {
+        const { type, data } = JSON.parse(msg);
+        console.log('type', type);
+
         switch (type) {
           case 'backtest':
             this.pump.start(ws, data);
@@ -48,8 +56,6 @@ class CollectorWS {
       ws.on('pong', CollectorWS.heartbeat);
 
       ws.on('close', (code, reason) => {
-        console.log('it exist on server?');
-
         wsDebug(`WS disconnected (${code}): ${reason}`);
         ws.terminate();
       });

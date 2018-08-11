@@ -6,29 +6,7 @@ const debug = require('debug')('collector:pump');
 
 const utils = require('../tools/utils');
 
-// STARTUP
-// open logs and get folder names, create list of folder names
-// open 1st folder, get all file names, create list with file names (ws)
-// WS send pair names to get called by REST from client
-// REST files: read and build candles with data, save in memory, send on requet and delete data
-
-// LOOP
-// startNext is called on REST request of pair
-// use pair name to get WS file
-// start reading WS, build JSON and for each JSON pipe to WS
-// on end file, remove it from list and check if list is empty
-// if list empty, send 'closePeriod'
-// REST request will trigger next folder
-// ...
-
-// CHECK FOR ERRORS
-// checkpoints: send 100 JSON, wait for 'continue' reply to send more (log time to see if can increase JSON number)
-// client: check if time is greater than last time of JSON
 class Pump {
-  // constructor() {
-
-  // }
-
   static getFolderContent(path) {
     return new Promise((resolve, reject) => {
       fs.readdir(path, (err, names) => {
@@ -41,7 +19,21 @@ class Pump {
     });
   }
 
-  static pipeFolder(path, ws) {
+  static pipeFolder(path, ws, data) {
+    console.log('path', path);
+    const [,, timestamp] = path.split('/');
+    const groupDate = new Date(timestamp);
+
+    if (data.startDate) {
+      const startDate = new Date(data.startDate);
+      if (groupDate < startDate) return Promise.resolve(true);
+    }
+
+    if (data.endDate) {
+      const endDate = new Date(data.endDate);
+      if (groupDate > endDate) return Promise.resolve(true);
+    }
+
     return this.getFolderContent(path)
       .then((fileNames) => {
         const groups = new Map();
@@ -94,16 +86,17 @@ class Pump {
     Pump.getFolderContent(root)
       .then((folders) => {
         // Run one single folder at a time, when finished, go to next one
-        let chain;
-        const nodes = folders.map(f => (() => Pump.pipeFolder(`${root}/${f}`, ws)));
-        nodes.forEach((node) => {
-          if (chain) return chain.then(node);
-          chain = node();
-        });
-        return chain;
+        const nodes = folders.map(f => (() => Pump.pipeFolder(`${root}/${f}`, ws, data)));
+        return nodes.reduce((acc, node, i) => {
+          return acc.then((filtered) => {
+            if (!i) return; // Skip 1st, it runs on initialValue
+            if (filtered === true) ws.send({ t: 10 }); // Next folder
+            return node();
+          });
+        }, nodes[0]());
       })
       .then(() => {
-        ws.send('end');
+        ws.send({ t: 99 });
       })
       .catch((err) => {
         debug(err);

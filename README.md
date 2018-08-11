@@ -86,6 +86,7 @@ Oldest first, newest last
   t <Number // Type
     0: initial,
     1: periodic segment,
+    10: next folder start next,
   >,
   e <Number
     0: Binance,

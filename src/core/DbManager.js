@@ -1,4 +1,5 @@
 const fs = require('fs');
+const zlib = require('zlib');
 const debug = require('debug')('collector:persist');
 const fileLog = require('simple-node-logger').createSimpleFileLogger('logs/errors.log');
 
@@ -11,6 +12,8 @@ class DbManager {
     this.writeStreams = new Map();
     this.notFirstWrite = new Set();
     this.startTimeString = (new Date()).toISOString();
+    this.gzip = zlib.createGzip();
+
     gracefulExit(this._onExit.bind(this));
     this._checkFileSizes(432000000); // 5 days
   }
@@ -32,7 +35,11 @@ class DbManager {
 
     this.notFirstWrite.delete(uid);
     this._createStream({ source, interval, pair, part: +part + 1 })
-      .then(() => stream.end());
+      .then(() => {
+        stream
+          .on('close', () => this._compress(stream.path))
+          .end();
+      });
   }
 
   _checkFileSizes(timeout) {
@@ -43,12 +50,51 @@ class DbManager {
     }, timeout);
   }
 
+  _compress(path) {
+    return new Promise((resolve) => {
+      fs.stat(path, (errStat) => {
+        if (errStat) {
+          if (errStat.code !== 'ENOENT') {
+            debug('Error compressing file', path, errStat);
+            fileLog.error('Error compressing file', path, errStat);
+          }
+          return resolve();
+        }
+
+        const input = fs.createReadStream(path);
+        const output = fs.createWriteStream(`${path}.gz`);
+
+        output.on('close', () => {
+          fs.unlink(path, (err) => {
+            if (err) {
+              debug('File was gzip, but couldn\'t remove original', err);
+              fileLog.error('File was gzip, but couldn\'t remove original', err);
+            } else {
+              debug(`GZIP: ${path}`);
+            }
+            resolve();
+          });
+        });
+
+        input.pipe(this.gzip).pipe(output);
+      });
+    });
+  }
+
+  _compressAll() {
+    return Promise.all(
+      Array.from(this.writeStreams)
+        .map(([, stream]) => stream && this._compress(stream.path)),
+    );
+  }
+
   _onExit() {
     clearTimeout(this.checkFileSizesTimeout);
     return new Promise((function rerun(resolve) {
       const { length: wait } = Array.from(this.writing.values()).filter(v => v);
       if (!wait) {
         return this._cleanFolder()
+          .then(() => this._compressAll())
           .then(resolve);
       }
       debug(`Waiting all writes to finish. Count: ${wait}`);
@@ -64,6 +110,7 @@ class DbManager {
     const promises = [];
     const folderSet = new Set();
 
+    // Check files
     this.writeStreams.forEach((stream) => {
       const promise = new Promise((resolve) => {
         const [prefix, folder, name] = stream.path.split('/');
@@ -89,14 +136,13 @@ class DbManager {
 
         fs.unlink(stream.path, callback);
       });
-
       promises.push(promise);
     });
 
+    // Check folder
     return Promise.all(promises)
       .then(() => {
         const folderPromises = [];
-
         folderSet.forEach((folder) => {
           const fPromise = new Promise((resolve) => {
             fs.readdir(folder, (e, files) => {
@@ -127,33 +173,39 @@ class DbManager {
       const path = `data/${this.startTimeString}/${name}`;
       const uid = DbManager._getUid({ source, pair, interval });
 
-      const fd = fs.openSync(path, 'wx');
-      // Set path for cleaning
-      const writeStream = fs.createWriteStream(path, { fd, encoding: 'ascii' });
-
-      writeStream.on('error', (err) => {
-        debug(`Error writing to Stream ${pair}`, err);
-        fileLog.error(`Error writing to Stream ${pair}`, err);
-      });
-
-      writeStream.on('drain', () => {
-        this.writing.set(uid, false);
-      });
-
-      const originalWrite = Object.getPrototypeOf(writeStream).write;
-
-      writeStream.write = (function (_uid, notFirstWrite, string) {
-        if (notFirstWrite.has(_uid)) {
-          writeStream.write = originalWrite;
-          return writeStream.write(string);
+      fs.open(path, 'wx', (error, fd) => {
+        if (error) {
+          debug(`Couldn't create file: ${path}`, error);
+          fileLog.error(`Couldn't create file: ${path}`, error);
         }
-        const nlRemoved = string.substr(1);
-        notFirstWrite.add(_uid);
-        return originalWrite.call(writeStream, nlRemoved);
-      }).bind(writeStream, uid, this.notFirstWrite);
 
-      this.writeStreams.set(uid, writeStream);
-      resolve();
+        // Set path for cleaning
+        const writeStream = fs.createWriteStream(path, { fd, encoding: 'ascii' });
+
+        writeStream.on('error', (err) => {
+          debug(`Error writing to Stream ${pair}`, err);
+          fileLog.error(`Error writing to Stream ${pair}`, err);
+        });
+
+        writeStream.on('drain', () => {
+          this.writing.set(uid, false);
+        });
+
+        const originalWrite = Object.getPrototypeOf(writeStream).write;
+
+        writeStream.write = (function (_uid, notFirstWrite, string) {
+          if (notFirstWrite.has(_uid)) {
+            writeStream.write = originalWrite;
+            return writeStream.write(string);
+          }
+          const nlRemoved = string.substr(1);
+          notFirstWrite.add(_uid);
+          return originalWrite.call(writeStream, nlRemoved);
+        }).bind(writeStream, uid, this.notFirstWrite);
+
+        this.writeStreams.set(uid, writeStream);
+        resolve();
+      });
     });
   }
 

@@ -18,8 +18,8 @@ const {
   Websocket,
 } = require('./core');
 
-// const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
-const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
+const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
+// const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
 // const pairs = ['ETHBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);

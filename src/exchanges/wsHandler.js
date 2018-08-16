@@ -12,6 +12,7 @@ class WsHandler {
     this.missingSet = new Set();
     this.prevMissingSet = new Set();
     this.startTime = Date.now();
+    this.report24h = Date.now() + 86400000; // 1 day
   }
 
   // TODO 4 fetch missing data from REST and send it, so it wont have holes for too long
@@ -77,6 +78,10 @@ class WsHandler {
       logger(msg);
     } else {
       logger(`(${this.binanceWS.instance}) All assets are running ${runningFor}`);
+      if (this.report24h < Date.now()) {
+        this.sendMessage(`🕛 Running for ${runningFor} minutes`);
+        this.report24h += 86400000;
+      }
     }
 
     const startReplace = this.binanceWS.missingPairs.checkThreshold();

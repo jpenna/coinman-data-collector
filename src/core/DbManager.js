@@ -11,7 +11,7 @@ class DbManager {
     this.sourceSet = sourceSet;
     this.writeStreams = new Map();
     this.notFirstWrite = new Set();
-    this.startTimeString = (new Date()).toISOString();
+    this.startTimeString = (new Date()).toISOString(); // folder name
     this.gzip = zlib.createGzip();
 
     gracefulExit(this._onExit.bind(this));

@@ -80,8 +80,6 @@ class BinanceWS {
         callback(data);
       }).bind(this),
     );
-    const singleConnecting = this.connectingSingleWSMap.get(pair);
-
     this.connectingSingleWSMap.set(pair, singleWS);
   }
 

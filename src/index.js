@@ -18,15 +18,16 @@ const {
   Websocket,
 } = require('./core');
 
-// TODO add Telegram actions: get time, refresh cnx, check cnx, add/remove pair, stop collector (apocalypse)
+// TODO add Telegram actions: refresh cnx, add/remove pair, stop collector (apocalypse)
 
-const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
+// const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
 // const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
-// const pairs = ['ETHBTC'];
+const pairs = ['ETHBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 
 const spokesman = new Spokesman();
+spokesman.sendMessage(`📦 Initializing Collector\n${(new Date()).toLocaleString()}`);
 
 const sourceSet = new Set([{ source: 'BNB', interval: '30m', pairs }]);
 
@@ -51,11 +52,12 @@ const init = fetcher({ binanceRest: bnbRest, pairs });
 
 let interval = 1000;
 
+// Start creating files and...
 const dbManagerStarting = dbManager.setStreams();
 
-spokesman.register({ wsHandler });
+spokesman.register({ wsHandler, dbManager, sourceSet });
 
-(async function startCollecting() {
+(async function retry() {
   let data;
 
   try {
@@ -65,11 +67,12 @@ spokesman.register({ wsHandler });
     errorLog('Error fetching initial data. Retrying.', e);
     setTimeout(() => {
       if (interval < 10000) interval += 1000;
-      startCollecting();
+      retry();
     }, interval);
     return;
   }
 
+  // ... wait until all files created
   await dbManagerStarting;
 
   data.forEach((d, index) => {

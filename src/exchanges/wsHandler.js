@@ -1,4 +1,5 @@
 const logger = require('debug')('collector:wsHandler');
+const fileLogger = require('simple-node-logger').createSimpleFileLogger('logs/binance.log');
 
 const BinanceWS = require('./binanceWS');
 
@@ -76,6 +77,7 @@ class WsHandler {
     if (this.binanceWS.missingPairs.size) {
       const msg = `(${this.binanceWS.instance}) Running for ${runningFor}. Not all assets are running (${this.binanceWS.missingPairs.size}): ${this.binanceWS.missingPairs.toString()}. Replacing: ${!!this.newBinanceWS}.`;
       logger(msg);
+      fileLogger.info(msg);
     } else {
       logger(`(${this.binanceWS.instance}) All assets are running ${runningFor}`);
       if (this.report24h < Date.now()) {
@@ -92,7 +94,6 @@ class WsHandler {
       this.dropNewBinanceWS();
       this.sendMessage('🔗 Reconnected with same WS');
     } else if (!this.newBinanceWS && this.binanceWS.missingPairs.size) {
-      console.log(`Start singles (${this.binanceWS.instance})`);
       this.binanceWS.createSingleWS();
     }
 

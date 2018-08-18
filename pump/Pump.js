@@ -4,7 +4,7 @@ const fs = require('fs');
 const readline = require('readline');
 const debug = require('debug')('pump:Pump');
 
-const utils = require('../tools/utils');
+const utils = require('../src/tools/utils');
 
 class Pump {
   static getFolderContent(path) {
@@ -98,7 +98,7 @@ class Pump {
         const groups = folders.map(f => (() => Pump.pipeFolder(`${root}/${f}`, ws, data)));
         return groups.reduce((acc, node, i) => {
           return acc.then((filtered) => {
-            if (filtered !== true) ws.send({ t: 10 }); // Next time group
+            if (filtered !== true) ws.send({ t: 100 }); // Next time group
             if (!i) return true; // Skip 1st, it runs on initialValue
 
             return node();

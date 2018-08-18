@@ -91,7 +91,7 @@ class Spokesman {
 
       .hears('yes', (ctx) => {
         if (!this.apocalypse) return;
-        ctx.reply('💥 Shit, ending bot');
+        ctx.reply('💥 Shit, ending Collector');
         process.emit('quit');
       })
 

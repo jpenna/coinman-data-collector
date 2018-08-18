@@ -43,11 +43,10 @@ class CollectorWS {
 
       ws.on('message', (msg) => {
         const { type, data } = JSON.parse(msg);
-        console.log('type', type);
 
         switch (type) {
-          case 'backtest':
-            // this.pump.start(ws, data);
+          case 'snapshot':
+            this.postman.getSnapshot(ws, data);
             break;
         }
       });

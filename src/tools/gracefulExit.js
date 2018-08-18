@@ -1,7 +1,7 @@
 const { setup } = require('gracefully-exit');
 
 const logger = require('simple-node-logger').createSimpleFileLogger('logs/errors.log');
-const fileLogger = require('debug')('collector:process:error');
+const fileLogger = require('debug')('coinman:process:error');
 
 module.exports = setup({
   callbacks: [],

@@ -18,6 +18,10 @@ class Postman {
     });
   }
 
+  getSnapshot(ws, data) {
+    // TODO get snapshot from DB and send to WS
+  }
+
   receivedBinanceCandle(pair, data) {
     // ALERT: Asset and Base names are inverted here and from BNB
     // startTime closeTime open close high low volumeQuote volumeBase takerBuyVolumeQuote takerBuyVolumeBase numberOfTrades

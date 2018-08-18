@@ -1,13 +1,13 @@
-const telegram = require('./telegram');
+const Spokesman = require('./Spokesman');
 const DbManager = require('./DbManager');
 const fetcher = require('./fetcher');
-const LetterMan = require('./LetterMan');
+const Postman = require('./Postman');
 const Websocket = require('./Websocket');
 
 module.exports = {
-  telegram,
+  Spokesman,
   DbManager,
   fetcher,
-  LetterMan,
+  Postman,
   Websocket,
 };

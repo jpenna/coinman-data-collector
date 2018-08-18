@@ -11,12 +11,14 @@ try {
 } catch (e) { /* empty */ }
 
 const {
-  telegram,
+  Spokesman,
   DbManager,
   fetcher,
-  LetterMan,
+  Postman,
   Websocket,
 } = require('./core');
+
+// TODO add Telegram actions: get time, refresh cnx, check cnx, add/remove pair, stop collector (apocalypse)
 
 const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
 // const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
@@ -24,19 +26,24 @@ const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADA
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 
-const { sendMessage } = telegram.init();
+const spokesman = new Spokesman();
 
 const sourceSet = new Set([{ source: 'BNB', interval: '30m', pairs }]);
 
 const websocket = new Websocket();
 const dbManager = new DbManager({ sourceSet });
-const letterMan = new LetterMan({ dbManager, extraInfoSymbol, websocket });
-// const letterMan = new LetterMan({ dbManager, extraInfoSymbol, websocket: { broadcast: () => {} } });
+const postman = new Postman({ dbManager, extraInfoSymbol, websocket });
+// const postman = new Postman({ dbManager, extraInfoSymbol, websocket: { broadcast: () => {} } });
 
 const binanceRest = require('./exchanges/binanceRest');
 const WsHandler = require('./exchanges/wsHandler');
 
-const wsHandler = new WsHandler({ beautify: false, sendMessage, pairs, letterMan });
+const wsHandler = new WsHandler({
+  beautify: false,
+  sendMessage: spokesman.sendMessage,
+  pairs,
+  postman,
+});
 
 const bnbRest = binanceRest({ beautify: false });
 
@@ -45,6 +52,8 @@ const init = fetcher({ binanceRest: bnbRest, pairs });
 let interval = 1000;
 
 const dbManagerStarting = dbManager.setStreams();
+
+spokesman.register({ wsHandler });
 
 (async function startCollecting() {
   let data;
@@ -64,7 +73,7 @@ const dbManagerStarting = dbManager.setStreams();
   await dbManagerStarting;
 
   data.forEach((d, index) => {
-    letterMan.initialBinanceCandles({
+    postman.initialBinanceCandles({
       pair: pairs[index],
       interval: '30m',
       data: d,

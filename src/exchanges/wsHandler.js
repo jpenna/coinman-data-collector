@@ -3,11 +3,11 @@ const logger = require('debug')('collector:wsHandler');
 const BinanceWS = require('./binanceWS');
 
 class WsHandler {
-  constructor({ beautify = false, sendMessage, pairs, letterMan }) {
+  constructor({ beautify = false, sendMessage, pairs, postman }) {
     this.beautify = beautify;
     this.sendMessage = sendMessage;
     this.pairs = pairs;
-    this.letterMan = letterMan;
+    this.postman = postman;
 
     this.missingSet = new Set();
     this.prevMissingSet = new Set();
@@ -36,7 +36,7 @@ class WsHandler {
     this.newBinanceWS = new BinanceWS({
       beautify: false,
       pairs: this.pairs,
-      letterMan: this.letterMan,
+      postman: this.postman,
       pairsTimeout: this.pairsTimeout.bind(this),
       allConnected: this.allConnected.bind(this),
     });
@@ -56,7 +56,7 @@ class WsHandler {
     this.binanceWS = new BinanceWS({
       beautify: false,
       pairs: this.pairs,
-      letterMan: this.letterMan,
+      postman: this.postman,
       pairsTimeout: this.pairsTimeout.bind(this),
       allConnected: this.allConnected.bind(this),
     });

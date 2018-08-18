@@ -1,16 +1,16 @@
-class LetterMan {
+class Postman {
   constructor({ dbManager, extraInfoSymbol, websocket }) {
     this.dbManager = dbManager;
     this.extraInfoSymbol = extraInfoSymbol;
     this.websocket = websocket;
 
-    process.on('cleanup', LetterMan.cleanupModule.bind(this));
+    process.on('cleanup', Postman.cleanupModule.bind(this));
   }
 
   static cleanupModule() {
-    Object.getOwnPropertyNames(LetterMan.prototype).forEach((key) => {
-      if (key !== 'constructor' && typeof LetterMan.prototype[key] === 'function') {
-        LetterMan.prototype[key] = () => {
+    Object.getOwnPropertyNames(Postman.prototype).forEach((key) => {
+      if (key !== 'constructor' && typeof Postman.prototype[key] === 'function') {
+        Postman.prototype[key] = () => {
           // Count missed requests after system is flagged to shut down
           global[this.extraInfoSymbol][key] = (global[this.extraInfoSymbol].key || 0) + 1;
         };
@@ -42,4 +42,4 @@ class LetterMan {
   }
 }
 
-module.exports = LetterMan;
+module.exports = Postman;

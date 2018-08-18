@@ -11,10 +11,10 @@ let instancesCount = 0;
 // TODO usar um formato proprio, pq fica extensivel para outras exchanges mais facil
 
 class BinanceWS {
-  constructor({ beautify = false, pairs, letterMan, pairsTimeout, allConnected }) {
+  constructor({ beautify = false, pairs, postman, pairsTimeout, allConnected }) {
     this.beautify = beautify;
     this.pairs = pairs;
-    this.letterMan = letterMan;
+    this.postman = postman;
     this.pairsTimeout = pairsTimeout;
     this.missingPairs = new MissingPairs({ pairs });
     this.klineInterval = '30m';
@@ -137,7 +137,7 @@ class BinanceWS {
       }
 
       this.missingPairs.refresh(pair, this.instance);
-      this.letterMan.receivedBinanceCandle(pair, data);
+      this.postman.receivedBinanceCandle(pair, data);
     }).bind(this);
 
     if (single || upgrade) return defaultHandler;

@@ -15,7 +15,7 @@ class DbManager {
     this.gzip = zlib.createGzip();
 
     gracefulExit(this._onExit.bind(this));
-    this._checkFileSizes(432000000); // 5 days
+    // this._checkFileSizes(432000000); // 5 days
   }
 
   static _getUid({ source, pair, interval }) {
@@ -94,7 +94,7 @@ class DbManager {
       const { length: wait } = Array.from(this.writing.values()).filter(v => v);
       if (!wait) {
         return this._cleanFolder()
-          .then(() => this._compressAll())
+          // .then(() => this._compressAll())
           .then(resolve);
       }
       debug(`Waiting all writes to finish. Count: ${wait}`);

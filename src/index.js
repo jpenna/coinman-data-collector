@@ -20,9 +20,9 @@ const {
 
 // TODO add Telegram actions: refresh cnx, add/remove pair, stop collector (apocalypse)
 
-// const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
+const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
 // const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
-const pairs = ['ETHBTC'];
+// const pairs = ['ETHBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 

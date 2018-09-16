@@ -3,6 +3,12 @@ const fileLogger = require('simple-node-logger').createSimpleFileLogger('logs/bi
 
 const BinanceWS = require('./binanceWS');
 
+/*
+Handles the reconnection of the Websocket and
+connection of single pairs if the pair is missing from the bundle
+
+Currently only works with Binance because of the `pairs` param (which are pairs from Binance)
+*/
 class WsHandler {
   constructor({ beautify = false, sendMessage, pairs, postman }) {
     this.beautify = beautify;
@@ -17,6 +23,7 @@ class WsHandler {
   }
 
   // TODO 4 fetch missing data from REST and send it, so it wont have holes for too long
+  /* Triggers if all pairs didn't connect after timeout. Will retry a new connection */
   pairsTimeout() {
     const text = `Timeout. All websockets did not connect on time (2 min)(${this.binanceWS.instance})`;
     logger(text);
@@ -28,11 +35,13 @@ class WsHandler {
     this.dropNewBinanceWS();
   }
 
+  /* Call it to cancel the reconnection */
   dropNewBinanceWS() {
     this.newBinanceWS.drop();
     this.newBinanceWS = null; // GC
   }
 
+  /* Start reconnection */
   processReplace() {
     this.newBinanceWS = new BinanceWS({
       beautify: false,
@@ -43,6 +52,7 @@ class WsHandler {
     });
   }
 
+  /* Replace previous WS with the new one */
   replace() {
     if (!this.newBinanceWS) return;
     this.binanceWS.drop();
@@ -51,6 +61,7 @@ class WsHandler {
     this.sendMessage('🔗 New WS connected');
   }
 
+  /* Start Binance WS */
   start() {
     if (!this.pairs.length) return; // Only for development (testing)
     logger('Start WS Handler');
@@ -63,6 +74,7 @@ class WsHandler {
     });
   }
 
+  /* Handle the changes when ALL PAIRS for the WS are connected */
   allConnected(startConn) {
     logger(`All websockets connected (${startConn ? ((Date.now() - startConn) / 1000).toFixed(2) : '- '}sec)`);
     if (this.newBinanceWS) this.replace();
@@ -70,6 +82,11 @@ class WsHandler {
     this.checkConnection();
   }
 
+  /*
+  Check WS connection to see if all pairs were received on a timely basis.
+  Log the information and, if needed, (1) start replacing the connection
+  or (2) start new single connection for the pair
+  */
   checkConnection() {
     const runningFor = `(${((Date.now() - this.startTime) / 60000).toFixed(0)} minutes)`;
 

@@ -41,15 +41,20 @@ class CollectorWS {
         send(JSON.stringify(msg));
       };
 
-      ws.on('message', (msg) => {
-        const { type, data } = JSON.parse(msg);
+      // TODO add type subscribe and send only the subscribed pairs
+      // t: 'subscribe',
+      // e: i.exchange,
+      // p: i.pairs,
 
-        switch (type) {
-          case 'snapshot':
-            this.postman.getSnapshot(ws, data);
-            break;
-        }
-      });
+      // ws.on('message', (msg) => {
+      //   const { type, data } = JSON.parse(msg);
+
+      //   switch (type) {
+      //     case 'snapshot': // I am getting from binance directly
+      //       this.postman.getSnapshot(ws, data);
+      //       break;
+      //   }
+      // });
 
       ws.on('pong', CollectorWS._heartbeat);
 
@@ -78,6 +83,7 @@ class CollectorWS {
 
   broadcast(msg) {
     this.wss.clients.forEach((client) => {
+      // TODO the client should subscribe to the pairs it want to listen
       if (client.readyState !== Websocket.OPEN) return;
       client.send(JSON.stringify(msg));
     });

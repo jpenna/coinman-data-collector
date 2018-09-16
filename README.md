@@ -79,6 +79,10 @@ Oldest first, newest last
 ]
 ```
 
+## Kline format
+
+startTime closeTime open close high low volumeQuote volumeBase takerBuyVolumeQuote takerBuyVolumeBase numberOfTrades
+
 # Collector Websoket API
 
 ```ts

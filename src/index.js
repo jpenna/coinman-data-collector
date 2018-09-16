@@ -20,9 +20,9 @@ const {
 
 // TODO add Telegram actions: refresh cnx, add/remove pair, stop collector (apocalypse)
 
-// const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
+const pairs = ['BNBBTC', 'XLMBTC', 'XVGBTC', 'TRXBTC', 'ETHBTC', 'QTUMBTC', 'ADABTC', 'LUNBTC', 'ARKBTC', 'LSKBTC', 'ZRXBTC', 'XRPBTC'];
 // const pairs = ['ETHBTC', 'LUNBTC', 'XVGBTC', 'ARKBTC'];
-const pairs = ['ETHBTC'];
+// const pairs = ['ETHBTC'];
 
 debugSystem(`Initializing Collector at PID ${process.pid}`);
 
@@ -31,10 +31,10 @@ spokesman.sendMessage(`📦 Initializing Collector\n${(new Date()).toLocaleStrin
 
 const sourceSet = new Set([{ source: 'BNB', interval: '30m', pairs }]);
 
-const websocket = new Websocket();
-const dbManager = new DbManager({ sourceSet });
-const postman = new Postman({ dbManager, extraInfoSymbol, websocket });
-// const postman = new Postman({ dbManager, extraInfoSymbol, websocket: { broadcast: () => {} } });
+// const websocket = new Websocket();
+const dbManager = new DbManager({ sourceSet, sendMessage: spokesman.sendMessage });
+// const postman = new Postman({ dbManager, extraInfoSymbol, websocket });
+const postman = new Postman({ dbManager, extraInfoSymbol, websocket: { broadcast: () => {} } });
 
 const binanceRest = require('./exchanges/binanceRest');
 const WsHandler = require('./exchanges/wsHandler');

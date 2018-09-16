@@ -1,0 +1,50 @@
+collector:wsHandler (6) All assets are running (44632 minutes) +2m
+  collector:wsHandler (6) All assets are running (44634 minutes) +2m
+  collector:wsHandler (6) All assets are running (44636 minutes) +2m
+  collector:wsHandler (6) All assets are running (44638 minutes) +2m
+  collector:missingPairs Missing pair (3min interval)(6): ARKBTC +10m
+  collector:persist Splitting file (97042.9 kb): BNB_BNBBTC_30m_0.coinman +11d
+  collector:process:error Uncaught Exception -> Error: write after end
+  collector:process:error     at writeAfterEnd (_stream_writable.js:236:12)
+  collector:process:error     at Gzip.Writable.write (_stream_writable.js:287:5)
+  collector:process:error     at ReadStream.ondata (_stream_readable.js:639:20)
+  collector:process:error     at emitOne (events.js:116:13)
+  collector:process:error     at ReadStream.emit (events.js:211:7)
+  collector:process:error     at addChunk (_stream_readable.js:263:12)
+  collector:process:error     at readableAddChunk (_stream_readable.js:250:11)
+  collector:process:error     at ReadStream.Readable.push (_stream_readable.js:208:10)
+  collector:process:error     at fs.read (fs.js:2058:12)
+  collector:process:error     at FSReqWrap.wrapper [as oncomplete] (fs.js:658:17) +0ms
+  collector:process:error CLEANUP GRACEFULLY 2 0 +1ms
+  collector:process:error CLEANUP GRACEFULLY 2 0 +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_BNBBTC_30m_0.coinman +5ms
+(node:7449) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 unpipe listeners added. Use emitter.setMaxListeners() to increase limit
+(node:7449) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 drain listeners added. Use emitter.setMaxListeners() to increase limit
+(node:7449) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 error listeners added. Use emitter.setMaxListeners() to increase limit
+(node:7449) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 close listeners added. Use emitter.setMaxListeners() to increase limit
+(node:7449) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 finish listeners added. Use emitter.setMaxListeners() to increase limit
+  collector:process:error Uncaught Exception -> Error: write after end
+  collector:process:error     at writeAfterEnd (_stream_writable.js:236:12)
+  collector:process:error     at Gzip.Writable.write (_stream_writable.js:287:5)
+  collector:process:error     at ReadStream.ondata (_stream_readable.js:639:20)
+  collector:process:error     at emitOne (events.js:116:13)
+  collector:process:error     at ReadStream.emit (events.js:211:7)
+  collector:process:error     at addChunk (_stream_readable.js:263:12)
+  collector:process:error     at readableAddChunk (_stream_readable.js:250:11)
+  collector:process:error     at ReadStream.Readable.push (_stream_readable.js:208:10)
+  collector:process:error     at fs.read (fs.js:2058:12)
+  collector:process:error     at FSReqWrap.wrapper [as oncomplete] (fs.js:658:17) +13ms
+  collector:process:error CLEANUP WAS CALLED AGAIN!!! There is some error leaking in the cleanup process. +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_BNBBTC_30m_1.coinman +16ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_XLMBTC_30m_0.coinman +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_XVGBTC_30m_0.coinman +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_TRXBTC_30m_0.coinman +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_ETHBTC_30m_1.coinman +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_QTUMBTC_30m_0.coinman +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_ADABTC_30m_0.coinman +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_ARKBTC_30m_0.coinman +1ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_LSKBTC_30m_0.coinman +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_ZRXBTC_30m_0.coinman +1ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_LUNBTC_30m_0.coinman +0ms
+  collector:persist GZIP: data/2018-08-15T11:56:54.302Z/BNB_XRPBTC_30m_0.coinman +0ms
+  collector:process:error (PID 7449) Exiting with code: 1 - Uncaught Exception +5ms

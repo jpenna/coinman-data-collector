@@ -6,16 +6,40 @@ const fileLog = require('simple-node-logger').createSimpleFileLogger('logs/error
 const { gracefulExit } = require('gracefully-exit');
 
 class DbManager {
-  constructor({ sourceSet }) {
+  constructor({ sourceSet, sendMessage }) {
     this.writing = new Map();
     this.sourceSet = sourceSet;
+    this.sendMessage = sendMessage;
     this.writeStreams = new Map();
     this.notFirstWrite = new Set();
     this.startTimeString = (new Date()).toISOString(); // folder name
     this.gzip = zlib.createGzip();
 
     gracefulExit(this._onExit.bind(this));
-    this._checkFileSizes(432000000); // 5 days
+
+    // // 96076800 = 60*60*24*8 (8 days) * 139 (bytes/kline)
+    // this.maxFileSize = 96076800;
+    // // 10800 records (approx. 6 hours)
+    // this.minFileSize = 1501200;
+    // // 1 day
+    // this.checkFileSizeInterval = 86400000;
+    // this.retryCreatingStreamTimeout = 60000;
+    // // 5 days
+    // const firstCheckSizeTimeout = 432000000;
+
+
+    // TODO THERE IS AN ERROR, log is on the ./log
+    // looks like the write stream is being closed before pipe ends..
+    this.maxFileSize = 200000;
+    // 10800 records (approx. 6 hours)
+    this.minFileSize = 0;
+    // 1 day
+    this.checkFileSizeInterval = 10000;
+    this.retryCreatingStreamTimeout = 60000;
+    // 5 days
+    const firstCheckSizeTimeout = 15000;
+
+    this._checkFileSizes(firstCheckSizeTimeout);
   }
 
   static _getUid({ source, pair, interval }) {
@@ -23,8 +47,7 @@ class DbManager {
   }
 
   _checkSplit(stream) {
-    // 96076800 = 60*60*24*8 (8 days) * 139 (bytes/kline)
-    if (stream.bytesWritten < 96076800) return;
+    if (stream.bytesWritten < this.maxFileSize) return;
 
     const [,, name] = stream.path.split('/');
     const [source, pair, interval, part] = name.replace('.coinman', '').split('_');
@@ -37,7 +60,7 @@ class DbManager {
     this._createStream({ source, interval, pair, part: +part + 1 })
       .then(() => {
         stream
-          .on('close', () => this._compress(stream.path))
+          .on('finish', () => this._compress(stream.path))
           .end();
       });
   }
@@ -46,7 +69,7 @@ class DbManager {
     clearTimeout(this.checkFileSizesTimeout);
     this.checkFileSizesTimeout = setTimeout(() => {
       this.writeStreams.forEach(stream => this._checkSplit(stream));
-      this._checkFileSizes(86400000); // 1 day
+      this._checkFileSizes(this.checkFileSizeInterval); // 1 day
     }, timeout);
   }
 
@@ -64,16 +87,26 @@ class DbManager {
         const input = fs.createReadStream(path);
         const output = fs.createWriteStream(`${path}.gz`);
 
-        output.on('close', () => {
-          fs.unlink(path, (err) => {
-            if (err) {
-              debug('File was gzip, but couldn\'t remove original', err);
-              fileLog.error('File was gzip, but couldn\'t remove original', err);
-            } else {
-              debug(`GZIP: ${path}`);
-            }
-            resolve();
-          });
+        output.on('error', (err) => {
+          debug('Error outputting GZIP file (output):', err);
+          fileLog.error('Error outputting GZIP file (output):', err);
+          return resolve();
+        });
+
+        output.on('finish', () => {
+          debug('Output is finished');
+          // Wait 15 seconds to delete original (if application crashes, it won't remove the file)
+          setTimeout(() => {
+            fs.unlink(path, (err) => {
+              if (err) {
+                debug('File was gzip, but couldn\'t remove original', err);
+                fileLog.error('File was gzip, but couldn\'t remove original', err);
+              } else {
+                debug(`GZIP: ${path}`);
+              }
+              resolve();
+            });
+          }, 15000);
         });
 
         input.pipe(this.gzip).pipe(output);
@@ -131,8 +164,7 @@ class DbManager {
           resolve();
         };
 
-        // 10800 records (approx. 6 hours)
-        if (stream.bytesWritten > 1501200) return resolve();
+        if (stream.bytesWritten > this.minFileSize) return resolve();
 
         fs.unlink(stream.path, callback);
       });
@@ -177,6 +209,10 @@ class DbManager {
         if (error) {
           debug(`Couldn't create file: ${path}`, error);
           fileLog.error(`Couldn't create file: ${path}`, error);
+          return setTimeout(() => {
+            this.sendMessage(`Couldn't create file: ${path}. Retrying in 1 minute`);
+            resolve(this._createStream({ source, interval, pair, part }));
+          }, this.retryCreatingStreamTimeout);
         }
 
         // Set path for cleaning

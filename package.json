@@ -15,7 +15,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Juliano Penna <julianopenna@gmail.com>",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "binance": "github:jpenna/binance",
     "body-parser": "^1.18.3",

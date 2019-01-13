@@ -1,4 +1,12 @@
-# Coinman
+# Coinman Data Collector
+
+> This bot it not working! The features are not complete.
+
+> I didn't finish it and I can't see when I will start working on it again, so I am open sourcing it. Feel free to fork, do your own and contribute if you want.
+
+This is the data collector for my cryptocurrency bot ([Coinman](https://github.com/jpenna/coinman))
+
+It collects the data and store it locally using the expected data structure for Coinman. Coinman connects to this module to receive data from the exchanges and to run back-tests on the stored data.
 
 ## Account information (USER_DATA)
 
